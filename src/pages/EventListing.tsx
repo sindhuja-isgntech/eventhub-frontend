@@ -1,10 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { EventCard } from '../components/EventCard';
 import {
   Search,
-  Filter,
   X,
   SlidersHorizontal,
   LayoutGrid,
@@ -13,11 +12,13 @@ import {
   ArrowUpDown,
   MapPin,
   Calendar,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const EventListing: React.FC = () => {
-  const { events, categories, savedEventIds } = useApp();
+  const { events, categories, savedEventIds, isLoading, refreshEvents } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // State from URL or defaults
@@ -29,20 +30,9 @@ export const EventListing: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showOnlySaved, setShowOnlySaved] = useState(searchParams.get('saved') === 'true');
 
-  useEffect(() => {
-    const urlCategory = searchParams.get('category');
-    if (urlCategory) setSelectedCategory(urlCategory);
-
-    const urlSearch = searchParams.get('search');
-    if (urlSearch !== null) setSearchTerm(urlSearch);
-
-    const urlSaved = searchParams.get('saved');
-    if (urlSaved === 'true') setShowOnlySaved(true);
-  }, [searchParams]);
-
-  // Unique cities from events
+  // Unique cities from backend events
   const cities = useMemo(() => {
-    const list = Array.from(new Set(events.map(e => e.venue.city)));
+    const list = Array.from(new Set(events.map(e => e.venue.city).filter(Boolean)));
     return ['All', ...list];
   }, [events]);
 
@@ -126,7 +116,7 @@ export const EventListing: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider mb-1">
               <Sparkles className="w-4 h-4" />
-              <span>Event Directory</span>
+              <span>Live Database Catalog</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
               {showOnlySaved ? 'Your Saved Events' : 'Explore All Experiences'}
@@ -134,29 +124,42 @@ export const EventListing: React.FC = () => {
             <p className="text-slate-600 text-sm mt-1">
               {showOnlySaved
                 ? 'Events and experiences you have bookmarked for later.'
-                : 'Browse conferences, festivals, exhibits, and workshops across top cities.'}
+                : 'Browse live events fetched directly from your Spring Boot backend.'}
             </p>
           </div>
 
-          {/* Quick Toggle for Saved Events */}
-          <button
-            onClick={() => {
-              setShowOnlySaved(!showOnlySaved);
-              setSearchParams(prev => {
-                if (!showOnlySaved) prev.set('saved', 'true');
-                else prev.delete('saved');
-                return prev;
-              });
-            }}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition shadow-xs ${
-              showOnlySaved
-                ? 'bg-rose-50 border-rose-300 text-rose-700'
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
-          >
-            <Heart className={`w-4 h-4 ${showOnlySaved ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
-            <span>Saved ({savedEventIds.length})</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Sync from backend button */}
+            <button
+              onClick={() => refreshEvents()}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition shadow-xs cursor-pointer disabled:opacity-50"
+              title="Sync with backend database"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Sync Backend</span>
+            </button>
+
+            {/* Quick Toggle for Saved Events */}
+            <button
+              onClick={() => {
+                setShowOnlySaved(!showOnlySaved);
+                setSearchParams(prev => {
+                  if (!showOnlySaved) prev.set('saved', 'true');
+                  else prev.delete('saved');
+                  return prev;
+                });
+              }}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition shadow-xs ${
+                showOnlySaved
+                  ? 'bg-rose-50 border-rose-300 text-rose-700'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${showOnlySaved ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+              <span>Saved ({savedEventIds.length})</span>
+            </button>
+          </div>
         </div>
 
         {/* Category Pills Bar */}
@@ -264,7 +267,7 @@ export const EventListing: React.FC = () => {
 
         </div>
 
-        {/* Status Bar: Count, Active Filters & View Mode */}
+        {/* Status Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-100 text-xs">
           <div className="flex items-center gap-3">
             <span className="font-bold text-slate-700">
@@ -303,6 +306,14 @@ export const EventListing: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Loading state indicator */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8 text-indigo-600 gap-2 text-sm font-semibold">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          <span>Synchronizing events from backend...</span>
+        </div>
+      )}
 
       {/* Results View */}
       <section aria-label="Events Catalog">
@@ -370,7 +381,7 @@ export const EventListing: React.FC = () => {
         ) : (
           <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 max-w-md mx-auto shadow-xs">
             <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto">
-              <Filter className="w-8 h-8" />
+              <Sparkles className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-slate-900">No events found</h3>
             <p className="text-sm text-slate-500 leading-relaxed">

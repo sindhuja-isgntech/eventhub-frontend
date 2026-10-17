@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Event, Booking, User, EventCategory, ToastMessage } from '../types';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { Event, Booking, User, EventCategory, ToastMessage, Venue } from '../types';
+import { eventService, categoryService } from '../services/api';
 
 interface AppContextType {
   events: Event[];
@@ -8,13 +9,15 @@ interface AppContextType {
   currentUser: User | null;
   savedEventIds: number[];
   toasts: ToastMessage[];
+  isLoading: boolean;
+  refreshEvents: () => Promise<void>;
   login: (email: string, name?: string, role?: 'CUSTOMER' | 'ADMIN') => void;
   logout: () => void;
   register: (name: string, email: string, phone: string, role?: 'CUSTOMER' | 'ADMIN') => void;
   toggleSaveEvent: (eventId: number) => void;
   bookEvent: (bookingData: Omit<Booking, 'id' | 'bookingDate' | 'status'>) => Booking;
   cancelBooking: (bookingId: string) => void;
-  addEvent: (newEvent: Omit<Event, 'id'>) => void;
+  addEvent: (newEvent: Omit<Event, 'id'>) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
 }
@@ -39,7 +42,7 @@ const INITIAL_EVENTS: Event[] = [
     endDate: '2026-11-17T18:00:00',
     price: 89.00,
     totalSeats: 500,
-    availableSeats: 84,
+    availableSeats: 86,
     imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
     organizer: 'NextGen Tech Foundation',
     featured: true,
@@ -194,6 +197,71 @@ const DEFAULT_USER: User = {
   savedEventIds: [1, 2]
 };
 
+// Helper to normalize backend event entity to frontend Event interface
+const mapBackendEvent = (be: any): Event => {
+  const categoryName = typeof be.category === 'object' && be.category !== null
+    ? be.category.name
+    : (be.category || 'General');
+
+  const venueObj: Venue = typeof be.venue === 'object' && be.venue !== null
+    ? {
+        id: be.venue.id || 1,
+        name: be.venue.name || 'Main Hall',
+        address: be.venue.address || '',
+        city: be.venue.city || 'City Center',
+        capacity: be.venue.capacity
+      }
+    : {
+        id: 1,
+        name: 'Main Hall',
+        address: '',
+        city: 'City Center'
+      };
+
+  const priceVal = typeof be.price === 'number' ? be.price : parseFloat(be.price || '0');
+  const availableVal = be.availableSeats !== undefined ? be.availableSeats : (be.totalSeats || 100);
+
+  return {
+    id: be.id,
+    title: be.title,
+    description: be.description || '',
+    category: categoryName,
+    venue: venueObj,
+    dateTime: be.dateTime,
+    endDate: be.endDate,
+    price: priceVal,
+    totalSeats: be.totalSeats || 100,
+    availableSeats: availableVal,
+    imageUrl: be.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+    organizer: be.organizer || 'EventHub Host',
+    featured: Boolean(be.featured),
+    tags: be.tags || [categoryName, 'Live', 'Featured'],
+    tiers: be.tiers && be.tiers.length > 0 ? be.tiers : [
+      {
+        id: `tier-std-${be.id}`,
+        name: 'Standard Pass',
+        price: priceVal,
+        description: 'Full admission to event and venue floor',
+        availableSeats: Math.min(availableVal, 50),
+        perks: ['General Admission', 'Digital Ticket Pass', 'Venue Amenities']
+      },
+      {
+        id: `tier-vip-${be.id}`,
+        name: 'VIP All-Access',
+        price: Math.round(priceVal * 1.8),
+        description: 'Front-row seating, VIP lounge & commemorative gift',
+        availableSeats: Math.min(availableVal, 20),
+        perks: ['VIP Priority Gate', 'Lounge Access & Drinks', 'Fast-Track Check-In']
+      }
+    ],
+    agenda: be.agenda || [
+      { time: '10:00 AM', title: 'Registration & Welcome', description: 'Badge pickup, coffee and morning meet-and-greet.' },
+      { time: '11:30 AM', title: 'Main Stage Keynote Session', description: 'Featured talks and interactive demonstrations.' },
+      { time: '02:00 PM', title: 'Workshops & Networking', description: 'Engage with organizers, peers, and industry mentors.' }
+    ]
+  };
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -202,7 +270,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return cached ? JSON.parse(cached) : INITIAL_EVENTS;
   });
 
-  const [categories] = useState<EventCategory[]>(INITIAL_CATEGORIES);
+  const [categories, setCategories] = useState<EventCategory[]>(INITIAL_CATEGORIES);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [bookings, setBookings] = useState<Booking[]>(() => {
     const cached = localStorage.getItem('eventhub_bookings');
@@ -220,6 +289,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Function to fetch events and categories from Spring Boot backend
+  const refreshEvents = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [backendEvents, backendCategories] = await Promise.allSettled([
+        eventService.getAllEvents(),
+        categoryService.getAllCategories()
+      ]);
+
+      if (backendEvents.status === 'fulfilled' && Array.isArray(backendEvents.value) && backendEvents.value.length > 0) {
+        const mapped = backendEvents.value.map(mapBackendEvent);
+        setEvents(mapped);
+        localStorage.setItem('eventhub_events', JSON.stringify(mapped));
+      }
+
+      if (backendCategories.status === 'fulfilled' && Array.isArray(backendCategories.value) && backendCategories.value.length > 0) {
+        setCategories(backendCategories.value);
+      }
+    } catch (err) {
+      console.warn('Backend synchronization warning, keeping cached state:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch from backend on initial mount
+  useEffect(() => {
+    refreshEvents();
+  }, [refreshEvents]);
 
   useEffect(() => {
     localStorage.setItem('eventhub_events', JSON.stringify(events));
@@ -345,7 +444,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Reservation #${bookingId} has been cancelled.`, 'info');
   };
 
-  const addEvent = (newEventData: Omit<Event, 'id'>) => {
+  const addEvent = async (newEventData: Omit<Event, 'id'>) => {
+    try {
+      const cat = categories.find(c => c.name.toLowerCase() === newEventData.category.toLowerCase()) || categories[0];
+      const payload = {
+        title: newEventData.title,
+        description: newEventData.description,
+        categoryId: cat ? cat.id : 1,
+        venueId: newEventData.venue?.id || 1,
+        dateTime: newEventData.dateTime,
+        price: newEventData.price,
+        totalSeats: newEventData.totalSeats,
+        imageUrl: newEventData.imageUrl,
+        organizer: newEventData.organizer,
+        featured: newEventData.featured || false
+      };
+
+      const saved = await eventService.createEvent(payload);
+      if (saved && saved.id) {
+        const mapped = mapBackendEvent(saved);
+        setEvents(prev => [mapped, ...prev.filter(e => e.id !== mapped.id)]);
+        showToast(`Event "${saved.title}" saved to backend database!`, 'success');
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend event creation failed, creating locally:', err);
+    }
+
     const newId = Math.max(...events.map(e => e.id), 0) + 1;
     const event: Event = {
       ...newEventData,
@@ -364,6 +489,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         savedEventIds,
         toasts,
+        isLoading,
+        refreshEvents,
         login,
         logout,
         register,
@@ -387,4 +514,3 @@ export const useApp = () => {
   }
   return context;
 };
-
