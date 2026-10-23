@@ -15,7 +15,7 @@ interface AppContextType {
   logout: () => void;
   register: (name: string, email: string, phone: string, role?: 'CUSTOMER' | 'ADMIN') => void;
   toggleSaveEvent: (eventId: number) => void;
-  bookEvent: (bookingData: Omit<Booking, 'id' | 'bookingDate' | 'status'>) => Booking;
+  bookEvent: (bookingData: Omit<Booking, 'id' | 'bookingDate' | 'status'>, customId?: string) => Booking;
   cancelBooking: (bookingId: string) => void;
   addEvent: (newEvent: Omit<Event, 'id'>) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -397,8 +397,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const bookEvent = (bookingData: Omit<Booking, 'id' | 'bookingDate' | 'status'>): Booking => {
-    const newId = `EH-${Math.floor(10000 + Math.random() * 90000)}`;
+  const bookEvent = (bookingData: Omit<Booking, 'id' | 'bookingDate' | 'status'>, customId?: string): Booking => {
+    const newId = customId || `EH-${Math.floor(10000 + Math.random() * 90000)}`;
     const newBooking: Booking = {
       ...bookingData,
       id: newId,
