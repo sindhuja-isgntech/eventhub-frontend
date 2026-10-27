@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Calendar, User, Mail, Lock, Phone, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { getApiErrorMessage } from '../services/api';
 
 export const Registration: React.FC = () => {
   const navigate = useNavigate();
@@ -12,19 +13,34 @@ export const Registration: React.FC = () => {
     email: '',
     phone: '',
     password: '',
-    role: 'CUSTOMER' as 'CUSTOMER' | 'ADMIN',
+    role: 'CUSTOMER' as 'CUSTOMER' | 'ORGANIZER',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email) return;
-    register(formData.name, formData.email, formData.phone, formData.role);
-    navigate(formData.role === 'ADMIN' ? '/admin' : '/events');
+    setErrorMessage('');
+    setIsSubmitting(true);
+    try {
+      const user = await register(
+        formData.name,
+        formData.email,
+        formData.phone,
+        formData.password,
+        formData.role,
+      );
+      navigate(user.role === 'ADMIN' ? '/admin' : '/events');
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, 'Unable to create your account. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -106,6 +122,7 @@ export const Registration: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 name="password"
                 required
+                minLength={8}
                 placeholder="At least 8 characters"
                 value={formData.password}
                 onChange={handleChange}
@@ -140,9 +157,9 @@ export const Registration: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, role: 'ADMIN' })}
+                onClick={() => setFormData({ ...formData, role: 'ORGANIZER' })}
                 className={`py-2 px-3 rounded-xl font-bold border transition ${
-                  formData.role === 'ADMIN'
+                  formData.role === 'ORGANIZER'
                     ? 'bg-indigo-600 text-white border-indigo-600'
                     : 'bg-slate-50 text-slate-600 border-slate-200'
                 }`}
@@ -152,12 +169,17 @@ export const Registration: React.FC = () => {
             </div>
           </div>
 
+          {errorMessage && (
+            <p role="alert" className="text-sm text-red-600">{errorMessage}</p>
+          )}
+
           <button
             type="submit"
+            disabled={isSubmitting}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm mt-3"
           >
             <Sparkles className="w-4 h-4" />
-            <span>Create Account</span>
+            <span>{isSubmitting ? 'Creating Account...' : 'Create Account'}</span>
           </button>
         </form>
 

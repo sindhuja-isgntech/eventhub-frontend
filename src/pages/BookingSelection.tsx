@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Calendar, MapPin, Ticket, User, Mail, Phone, ArrowLeft, ArrowRight } from 'lucide-react';
-import { eventService, bookingService } from '../services/api';
+import { Calendar, MapPin, Ticket, User, ArrowLeft, ArrowRight } from 'lucide-react';
+import { eventService, bookingService, getApiErrorMessage } from '../services/api';
 import { useApp } from '../context/AppContext';
+import type { Event as EventModel } from '../types';
+
+type BookingEvent = Pick<EventModel, 'id' | 'title' | 'dateTime' | 'price' | 'availableSeats'> & {
+  venue?: Pick<EventModel['venue'], 'name' | 'city'>;
+};
 
 export const BookingSelection: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { currentUser, refreshBookings } = useApp();
 
-  const [event, setEvent] = useState<any>(null);
+  const [event, setEvent] = useState<BookingEvent | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
   const [attendees, setAttendees] = useState<Array<{ name: string; email: string; phone: string }>>([
     { name: '', email: '', phone: '' }
@@ -23,8 +29,8 @@ export const BookingSelection: React.FC = () => {
         setLoading(true);
         const data = await eventService.getEventById(id!);
         setEvent(data);
-      } catch (err: any) {
-        setError('Failed to fetch event details.');
+      } catch (error) {
+        setError(getApiErrorMessage(error, 'Failed to fetch event details.'));
       } finally {
         setLoading(false);
       }
@@ -57,21 +63,26 @@ export const BookingSelection: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
 
       const payload = {
-        userId: 1, // Default active logged-in user
         eventId: Number(id),
         quantity: quantity,
         attendees: attendees
       };
 
       const createdBooking = await bookingService.createBooking(payload);
-      navigate(`/bookings/confirmation/${createdBooking.id}`);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to complete booking. Please try again.');
+      await refreshBookings();
+      navigate(`/bookings/confirmation/EH-${createdBooking.id}`);
+    } catch (error) {
+      setError(getApiErrorMessage(error, 'Failed to complete booking. Please try again.'));
     } finally {
       setSubmitting(false);
     }

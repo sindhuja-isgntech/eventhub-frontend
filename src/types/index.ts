@@ -61,6 +61,13 @@ export interface Booking {
   qrCodeUrl?: string;
 }
 
+export interface BookingRecord extends Omit<Booking, 'id'> {
+  id: number;
+  userId: number;
+  customerName: string;
+  customerEmail: string;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -76,4 +83,3 @@ export interface ToastMessage {
   type: 'success' | 'error' | 'info';
   message: string;
 }
-

@@ -15,10 +15,11 @@ import {
 } from 'lucide-react';
 
 export const MyBookings: React.FC = () => {
-  const { bookings, cancelBooking, currentUser } = useApp();
+  const { bookings, bookingsLoading, cancelBooking, currentUser, showToast } = useApp();
   const [activeTab, setActiveTab] = useState<'ALL' | 'CONFIRMED' | 'CANCELLED'>('CONFIRMED');
   const [selectedPass, setSelectedPass] = useState<Booking | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const filteredBookings = bookings.filter(b => {
     if (activeTab === 'ALL') return true;
@@ -29,6 +30,10 @@ export const MyBookings: React.FC = () => {
   const totalSpent = bookings
     .filter(b => b.status === 'CONFIRMED')
     .reduce((sum, b) => sum + b.totalAmount, 0);
+
+  if (bookingsLoading) {
+    return <div className="py-20 text-center text-slate-500">Loading your bookings...</div>;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -74,7 +79,7 @@ export const MyBookings: React.FC = () => {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Attendee Profile</p>
           <p className="text-lg font-bold text-slate-900 mt-1 truncate">{currentUser?.name || 'Guest User'}</p>
-          <span className="text-[11px] text-slate-500 truncate block">{currentUser?.email || 'alex.morgan@example.com'}</span>
+          <span className="text-[11px] text-slate-500 truncate block">{currentUser?.email}</span>
         </div>
       </div>
 
@@ -307,13 +312,21 @@ export const MyBookings: React.FC = () => {
                 Keep Booking
               </button>
               <button
-                onClick={() => {
-                  cancelBooking(bookingToCancel.id);
-                  setBookingToCancel(null);
+                onClick={async () => {
+                  setIsCancelling(true);
+                  try {
+                    await cancelBooking(bookingToCancel.id);
+                    setBookingToCancel(null);
+                  } catch {
+                    showToast('Unable to cancel this booking. Please try again.', 'error');
+                  } finally {
+                    setIsCancelling(false);
+                  }
                 }}
+                disabled={isCancelling}
                 className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition shadow-xs"
               >
-                Yes, Cancel Reservation
+                {isCancelling ? 'Cancelling...' : 'Yes, Cancel Reservation'}
               </button>
             </div>
           </div>

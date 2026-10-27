@@ -1,30 +1,40 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { Calendar, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { authService, getApiErrorMessage } from '../services/api';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'CUSTOMER' | 'ADMIN'>('CUSTOMER');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [noticeMessage, setNoticeMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const { login } = useApp();
+  const location = useLocation();
   const navigate = useNavigate();
+  const resetSuccessMessage = (location.state as { message?: string } | null)?.message;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-    login(email, undefined, role);
-    navigate(role === 'ADMIN' ? '/admin' : '/events');
-  };
+    setErrorMessage('');
+    setNoticeMessage('');
+    setIsSubmitting(true);
+    try {
+      if (isForgotPassword) {
+        await authService.forgotPassword(email);
+        setNoticeMessage('If an account exists for this email, we have sent a password reset link.');
+        return;
+      }
 
-  const handleDemoLogin = (demoRole: 'CUSTOMER' | 'ADMIN') => {
-    if (demoRole === 'ADMIN') {
-      login('admin@eventhub.io', 'Admin Victoria', 'ADMIN');
-      navigate('/admin');
-    } else {
-      login('alex.morgan@example.com', 'Alex Morgan', 'CUSTOMER');
-      navigate('/events');
+      const user = await login(email, password);
+      navigate(user.role === 'ADMIN' ? '/admin' : '/events');
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, 'Unable to sign in. Please check your details and try again.'));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -39,29 +49,9 @@ export const Login: React.FC = () => {
           </Link>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Sign In to EventHub</h1>
           <p className="text-xs text-slate-500">Access your digital tickets, saved events, and profile.</p>
-        </div>
-
-        {/* Demo Fast-Login Pills */}
-        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs space-y-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block text-center">
-            ⚡ Quick 1-Click Evaluation Login
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('CUSTOMER')}
-              className="flex-1 bg-white hover:bg-indigo-50 text-indigo-600 border border-slate-200 hover:border-indigo-200 py-1.5 px-2 rounded-xl font-bold text-xs transition shadow-xs"
-            >
-              Attendee (Alex)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('ADMIN')}
-              className="flex-1 bg-white hover:bg-violet-50 text-violet-600 border border-slate-200 hover:border-violet-200 py-1.5 px-2 rounded-xl font-bold text-xs transition shadow-xs"
-            >
-              Admin Portal
-            </button>
-          </div>
+          {resetSuccessMessage && (
+            <p role="status" className="text-sm text-emerald-700">{resetSuccessMessage}</p>
+          )}
         </div>
 
         {/* Form */}
@@ -84,14 +74,22 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-1">
+          {!isForgotPassword && <div className="space-y-1">
             <div className="flex justify-between items-center">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                 Password
               </label>
-              <a href="#" onClick={(e) => { e.preventDefault(); alert('Demo password reset instructions sent!'); }} className="text-[11px] text-indigo-600 hover:underline">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(true);
+                  setErrorMessage('');
+                  setNoticeMessage('');
+                }}
+                className="text-[11px] text-indigo-600 hover:underline"
+              >
                 Forgot password?
-              </a>
+              </button>
             </div>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
@@ -111,47 +109,45 @@ export const Login: React.FC = () => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-          </div>
+          </div>}
 
-          {/* Role Choice */}
-          <div className="pt-1">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
-              Account Role
-            </label>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => setRole('CUSTOMER')}
-                className={`py-2 px-3 rounded-xl font-bold border transition ${
-                  role === 'CUSTOMER'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-slate-50 text-slate-600 border-slate-200'
-                }`}
-              >
-                Attendee
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('ADMIN')}
-                className={`py-2 px-3 rounded-xl font-bold border transition ${
-                  role === 'ADMIN'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-slate-50 text-slate-600 border-slate-200'
-                }`}
-              >
-                Organizer / Admin
-              </button>
-            </div>
-          </div>
+          {noticeMessage && (
+            <p role="status" className="text-sm text-emerald-700">{noticeMessage}</p>
+          )}
+
+          {errorMessage && (
+            <p role="alert" className="text-sm text-red-600">{errorMessage}</p>
+          )}
 
           <button
             type="submit"
+            disabled={isSubmitting}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm mt-2"
           >
-            <span>Sign In</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>
+              {isSubmitting
+                ? (isForgotPassword ? 'Sending...' : 'Signing In...')
+                : (isForgotPassword ? 'Send Reset Link' : 'Sign In')}
+            </span>
+            {!isForgotPassword && <ArrowRight className="w-4 h-4" />}
           </button>
         </form>
+
+        {isForgotPassword && (
+          <div className="text-center text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setIsForgotPassword(false);
+                setErrorMessage('');
+                setNoticeMessage('');
+              }}
+              className="text-indigo-600 font-bold hover:underline"
+            >
+              Back to Sign In
+            </button>
+          </div>
+        )}
 
         {/* Footer Link */}
         <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">

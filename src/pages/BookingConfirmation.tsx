@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import { bookingService, getApiErrorMessage } from '../services/api';
+import type { Booking, BookingRecord } from '../types';
 import {
   CheckCircle2,
   Calendar,
@@ -13,37 +15,67 @@ import {
 
 export const BookingConfirmation: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { bookings, showToast } = useApp();
+  const { showToast } = useApp();
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const booking = bookings.find(b => b.id === id) || bookings[0] || {
-    id: id || 'EH-94820',
-    eventId: 1,
-    eventTitle: 'Tech Innovators Global Summit 2026',
-    eventCategory: 'Technology',
-    eventDateTime: '2026-11-15T09:30:00',
-    venueName: 'Jacob Javits Convention Center',
-    venueCity: 'New York',
-    ticketCount: 2,
-    tierName: 'Standard Pass',
-    totalAmount: 178.00,
-    bookingDate: new Date().toISOString().split('T')[0],
-    status: 'CONFIRMED' as const,
-    attendeeName: 'Alex Morgan',
-    attendeeEmail: 'alex.morgan@example.com',
-    attendeePhone: '+1 (555) 234-5678',
-    qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${id || 'EH-94820'}`
-  };
+  useEffect(() => {
+    let active = true;
+    const bookingId = id?.replace(/^EH-/, '');
+    if (!bookingId) {
+      return;
+    }
+
+    bookingService.getBooking(bookingId)
+      .then((record: BookingRecord) => {
+        if (active) setBooking({ ...record, id: `EH-${record.id}` });
+      })
+      .catch(error => {
+        if (active) setErrorMessage(getApiErrorMessage(error, 'Unable to load this booking.'));
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
   const handlePrint = () => {
     window.print();
   };
 
   const handleCopyRef = () => {
+    if (!booking) return;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(booking.id);
       showToast(`Booking reference #${booking.id} copied!`, 'info');
     }
   };
+
+  if (!id || !id.replace(/^EH-/, '')) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-4">
+        <p role="alert" className="text-rose-600">Booking not found.</p>
+        <Link to="/my-bookings" className="text-indigo-600 font-semibold hover:underline">Back to My Bookings</Link>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return <div className="py-20 text-center text-slate-500">Loading booking details...</div>;
+  }
+
+  if (!booking) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-20 text-center space-y-4">
+        <p role="alert" className="text-rose-600">{errorMessage || 'Booking not found.'}</p>
+        <Link to="/my-bookings" className="text-indigo-600 font-semibold hover:underline">Back to My Bookings</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">

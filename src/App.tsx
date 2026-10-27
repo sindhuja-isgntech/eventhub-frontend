@@ -10,7 +10,10 @@ import { MyBookings } from './pages/MyBookings';
 import { Profile } from './pages/Profile';
 import { Login } from './pages/Login';
 import { Registration } from './pages/Registration';
+import { ResetPassword } from './pages/ResetPassword';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { AdminBookings } from './pages/admin/AdminBookings';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Home as HomeIcon, AlertCircle } from 'lucide-react';
 import './App.css';
 
@@ -47,21 +50,26 @@ export function App() {
             <Route path="/" element={<Home />} />
             <Route path="/events" element={<EventListing />} />
             <Route path="/events/:id" element={<EventDetails />} />
-            <Route path="/bookings/confirmation/:id" element={<BookingConfirmation />} />
-            <Route path="/my-bookings" element={<MyBookings />} />
-            <Route path="/my-bookings/:id" element={<BookingConfirmation />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/bookings/confirmation/:id" element={<BookingConfirmation />} />
+              <Route path="/my-bookings" element={<MyBookings />} />
+              <Route path="/my-bookings/:id" element={<BookingConfirmation />} />
+            </Route>
             <Route path="/profile" element={<Profile />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/events" element={<AdminDashboard />} />
-            <Route path="/admin/categories" element={<AdminDashboard />} />
-            <Route path="/admin/venues" element={<AdminDashboard />} />
-            <Route path="/admin/bookings" element={<AdminDashboard />} />
+            <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/events" element={<AdminDashboard />} />
+              <Route path="/admin/categories" element={<AdminDashboard />} />
+              <Route path="/admin/venues" element={<AdminDashboard />} />
+              <Route path="/admin/bookings" element={<AdminBookings />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Route>
 
           {/* Standalone Authentication Layout */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Registration />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </Router>
     </AppProvider>

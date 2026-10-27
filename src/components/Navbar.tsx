@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { currentUser, bookings, savedEventIds, logout } = useApp();
+  const { currentUser, bookings, savedEventIds, logout, showToast } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [navSearch, setNavSearch] = useState('');
@@ -31,7 +31,16 @@ export const Navbar: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      showToast('Unable to sign out. Please try again.', 'error');
+    }
+  };
+
   const confirmedBookingsCount = bookings.filter(b => b.status === 'CONFIRMED').length;
+  const bookingsLabel = currentUser?.role === 'ADMIN' ? 'All Bookings' : 'My Bookings';
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs transition-all">
@@ -101,7 +110,7 @@ export const Navbar: React.FC = () => {
               }
             >
               <Ticket className="w-4 h-4 text-indigo-500" />
-              <span>My Bookings</span>
+              <span>{bookingsLabel}</span>
               {confirmedBookingsCount > 0 && (
                 <span className="bg-indigo-600 text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full min-w-5 text-center">
                   {confirmedBookingsCount}
@@ -109,17 +118,19 @@ export const Navbar: React.FC = () => {
               )}
             </NavLink>
 
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                `px-3 py-2 rounded-xl transition flex items-center gap-1.5 text-xs font-semibold ${
-                  isActive ? 'text-indigo-700 bg-indigo-100 font-bold' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'
-                }`
-              }
-            >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Admin Portal</span>
-            </NavLink>
+            {currentUser?.role === 'ADMIN' && (
+              <NavLink
+                to="/admin"
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-xl transition flex items-center gap-1.5 text-xs font-semibold ${
+                    isActive ? 'text-indigo-700 bg-indigo-100 font-bold' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'
+                  }`
+                }
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Admin Portal</span>
+              </NavLink>
+            )}
           </nav>
 
           {/* Right Action Icons & Auth Profile */}
@@ -175,19 +186,21 @@ export const Navbar: React.FC = () => {
                         to="/my-bookings"
                         className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
                       >
-                        <Ticket className="w-4 h-4 mr-2.5 text-slate-400" /> My Bookings
+                        <Ticket className="w-4 h-4 mr-2.5 text-slate-400" /> {bookingsLabel}
                       </Link>
-                      <Link
-                        to="/admin"
-                        className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
-                      >
-                        <Shield className="w-4 h-4 mr-2.5 text-slate-400" /> Admin Console
-                      </Link>
+                      {currentUser.role === 'ADMIN' && (
+                        <Link
+                          to="/admin"
+                          className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
+                        >
+                          <Shield className="w-4 h-4 mr-2.5 text-slate-400" /> Admin Console
+                        </Link>
+                      )}
                     </div>
 
                     <div className="pt-1 border-t border-slate-100">
                       <button
-                        onClick={logout}
+                        onClick={() => void handleLogout()}
                         className="flex w-full items-center px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition"
                       >
                         <LogOut className="w-4 h-4 mr-2.5" /> Sign Out
@@ -259,7 +272,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition flex justify-between items-center"
               >
-                <span>My Bookings</span>
+                <span>{bookingsLabel}</span>
                 {confirmedBookingsCount > 0 && (
                   <span className="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full">
                     {confirmedBookingsCount}
@@ -273,13 +286,15 @@ export const Navbar: React.FC = () => {
               >
                 User Profile
               </Link>
-              <Link
-                to="/admin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition flex items-center gap-1.5"
-              >
-                <Shield className="w-4 h-4 text-indigo-600" /> Admin Portal
-              </Link>
+              {currentUser?.role === 'ADMIN' && (
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition flex items-center gap-1.5"
+                >
+                  <Shield className="w-4 h-4 text-indigo-600" /> Admin Portal
+                </Link>
+              )}
 
               {!currentUser && (
                 <div className="pt-2 flex flex-col gap-2">

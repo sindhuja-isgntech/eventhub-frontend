@@ -1,22 +1,24 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { Event, Booking, User, EventCategory, ToastMessage, Venue } from '../types';
-import { eventService, categoryService } from '../services/api';
+import type { Event, Booking, BookingRecord, User, EventCategory, ToastMessage, Venue } from '../types';
+import { authService, eventService, categoryService, bookingService, adminService } from '../services/api';
 
 interface AppContextType {
   events: Event[];
   categories: EventCategory[];
   bookings: Booking[];
+  bookingsLoading: boolean;
   currentUser: User | null;
+  authLoading: boolean;
   savedEventIds: number[];
   toasts: ToastMessage[];
   isLoading: boolean;
   refreshEvents: () => Promise<void>;
-  login: (email: string, name?: string, role?: 'CUSTOMER' | 'ADMIN') => void;
-  logout: () => void;
-  register: (name: string, email: string, phone: string, role?: 'CUSTOMER' | 'ADMIN') => void;
+  refreshBookings: () => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  logout: () => Promise<void>;
+  register: (name: string, email: string, phone: string, password: string, role?: 'CUSTOMER' | 'ORGANIZER') => Promise<User>;
   toggleSaveEvent: (eventId: number) => void;
-  bookEvent: (bookingData: Omit<Booking, 'id' | 'bookingDate' | 'status'>, customId?: string) => Booking;
-  cancelBooking: (bookingId: string) => void;
+  cancelBooking: (bookingId: string) => Promise<void>;
   addEvent: (newEvent: Omit<Event, 'id'>) => Promise<void>;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
@@ -166,37 +168,6 @@ const INITIAL_EVENTS: Event[] = [
   }
 ];
 
-const INITIAL_BOOKINGS: Booking[] = [
-  {
-    id: 'EH-94820',
-    eventId: 1,
-    eventTitle: 'Tech Innovators Global Summit 2026',
-    eventCategory: 'Technology',
-    eventDateTime: '2026-11-15T09:30:00',
-    venueName: 'Jacob Javits Convention Center',
-    venueCity: 'New York',
-    ticketCount: 2,
-    tierName: 'Standard Pass',
-    totalAmount: 178.00,
-    bookingDate: '2026-10-14',
-    status: 'CONFIRMED',
-    attendeeName: 'Alex Morgan',
-    attendeeEmail: 'alex.morgan@example.com',
-    attendeePhone: '+1 (555) 234-5678',
-    qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=EH-94820'
-  }
-];
-
-const DEFAULT_USER: User = {
-  id: 101,
-  name: 'Alex Morgan',
-  email: 'alex.morgan@example.com',
-  phone: '+1 (555) 234-5678',
-  role: 'CUSTOMER',
-  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-  savedEventIds: [1, 2]
-};
-
 // Helper to normalize backend event entity to frontend Event interface
 const mapBackendEvent = (be: any): Event => {
   const categoryName = typeof be.category === 'object' && be.category !== null
@@ -262,6 +233,12 @@ const mapBackendEvent = (be: any): Event => {
   };
 };
 
+const mapBookingRecord = (record: BookingRecord): Booking => ({
+  ...record,
+  id: `EH-${record.id}`,
+  bookingDate: record.bookingDate,
+});
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -272,16 +249,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [categories, setCategories] = useState<EventCategory[]>(INITIAL_CATEGORIES);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const cached = localStorage.getItem('eventhub_bookings');
-    return cached ? JSON.parse(cached) : INITIAL_BOOKINGS;
-  });
-
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const cached = localStorage.getItem('eventhub_user');
-    return cached ? JSON.parse(cached) : DEFAULT_USER;
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [savedEventIds, setSavedEventIds] = useState<number[]>(() => {
     const cached = localStorage.getItem('eventhub_saved_events');
@@ -325,16 +297,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [events]);
 
   useEffect(() => {
-    localStorage.setItem('eventhub_bookings', JSON.stringify(bookings));
-  }, [bookings]);
+    let active = true;
+    authService.getCurrentUser()
+      .then(user => {
+        if (active) setCurrentUser(user);
+      })
+      .catch(error => {
+        if (active && error?.response?.status !== 401) {
+          console.error('Unable to restore the current session.', error);
+        }
+      })
+      .finally(() => {
+        if (active) setAuthLoading(false);
+      });
 
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('eventhub_user', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('eventhub_user');
-    }
-  }, [currentUser]);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('eventhub_saved_events', JSON.stringify(savedEventIds));
@@ -352,36 +332,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
-  const login = (email: string, name?: string, role: 'CUSTOMER' | 'ADMIN' = 'CUSTOMER') => {
-    const user: User = {
-      id: Math.floor(Math.random() * 1000) + 1,
-      name: name || (email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1)),
-      email,
-      role,
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      savedEventIds: [1]
-    };
+  const refreshBookings = useCallback(async () => {
+    if (!currentUser) {
+      return;
+    }
+
+    setBookingsLoading(true);
+    try {
+      const records = currentUser.role === 'ADMIN'
+        ? await adminService.getAllBookings()
+        : await bookingService.getMyBookings();
+      setBookings(records.map(mapBookingRecord));
+    } finally {
+      setBookingsLoading(false);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (authLoading || !currentUser) return;
+    Promise.resolve()
+      .then(() => refreshBookings())
+      .catch(error => {
+        console.error('Unable to load bookings for the signed-in user.', error);
+      });
+  }, [authLoading, currentUser, refreshBookings]);
+
+  const login = async (email: string, password: string) => {
+    const user = await authService.login({ email, password });
+    setBookings([]);
     setCurrentUser(user);
     showToast(`Welcome back, ${user.name}!`, 'success');
+    return user;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await authService.logout();
     setCurrentUser(null);
+    setBookings([]);
+    setBookingsLoading(false);
     showToast('You have signed out successfully.', 'info');
   };
 
-  const register = (name: string, email: string, phone: string, role: 'CUSTOMER' | 'ADMIN' = 'CUSTOMER') => {
-    const newUser: User = {
-      id: Math.floor(Math.random() * 1000) + 1,
+  const register = async (name: string, email: string, phone: string, password: string, role: 'CUSTOMER' | 'ORGANIZER' = 'CUSTOMER') => {
+    const newUser = await authService.register({
       name,
       email,
       phone,
+      password,
       role,
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-      savedEventIds: []
-    };
+    });
+    setBookings([]);
     setCurrentUser(newUser);
     showToast(`Account created! Welcome to EventHub, ${name}.`, 'success');
+    return newUser;
   };
 
   const toggleSaveEvent = (eventId: number) => {
@@ -397,50 +400,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const bookEvent = (bookingData: Omit<Booking, 'id' | 'bookingDate' | 'status'>, customId?: string): Booking => {
-    const newId = customId || `EH-${Math.floor(10000 + Math.random() * 90000)}`;
-    const newBooking: Booking = {
-      ...bookingData,
-      id: newId,
-      bookingDate: new Date().toISOString().split('T')[0],
-      status: 'CONFIRMED',
-      qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${newId}`
-    };
-
-    setBookings(prev => [newBooking, ...prev]);
-
-    // Deduct available seats
-    setEvents(prev => prev.map(ev => {
-      if (ev.id === bookingData.eventId) {
-        return {
-          ...ev,
-          availableSeats: Math.max(0, ev.availableSeats - bookingData.ticketCount)
-        };
-      }
-      return ev;
-    }));
-
-    showToast(`Booking confirmed for ${newBooking.eventTitle}!`, 'success');
-    return newBooking;
-  };
-
-  const cancelBooking = (bookingId: string) => {
-    const booking = bookings.find(b => b.id === bookingId);
-    if (!booking) return;
-
-    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'CANCELLED' } : b));
-
-    // Restore seats
-    setEvents(prev => prev.map(ev => {
-      if (ev.id === booking.eventId) {
-        return {
-          ...ev,
-          availableSeats: ev.availableSeats + booking.ticketCount
-        };
-      }
-      return ev;
-    }));
-
+  const cancelBooking = async (bookingId: string) => {
+    const numericId = Number(bookingId.replace(/^EH-/, ''));
+    await bookingService.cancelBooking(numericId);
+    await refreshBookings();
+    await refreshEvents();
     showToast(`Reservation #${bookingId} has been cancelled.`, 'info');
   };
 
@@ -486,16 +450,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         events,
         categories,
         bookings,
+        bookingsLoading,
         currentUser,
+        authLoading,
         savedEventIds,
         toasts,
         isLoading,
         refreshEvents,
+        refreshBookings,
         login,
         logout,
         register,
         toggleSaveEvent,
-        bookEvent,
         cancelBooking,
         addEvent,
         showToast,

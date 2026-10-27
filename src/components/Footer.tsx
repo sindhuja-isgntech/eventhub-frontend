@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Mail, CheckCircle2, Heart, Shield, Globe, Award, Sparkles } from 'lucide-react';
+import { Calendar, Mail, CheckCircle2, Heart, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export const Footer: React.FC = () => {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
-  const { showToast } = useApp();
+  const { showToast, currentUser } = useApp();
+  const bookingsLabel = currentUser?.role === 'ADMIN' ? 'All Bookings' : 'My Bookings';
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,8 +65,8 @@ export const Footer: React.FC = () => {
           </form>
         </div>
 
-        {/* 4 Column Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-slate-900">
+        {/* Footer Content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 pb-12 border-b border-slate-900">
           
           {/* Col 1: Brand & Bio */}
           <div className="lg:col-span-2 space-y-4">
@@ -80,45 +81,27 @@ export const Footer: React.FC = () => {
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
               The premier platform for discovering, organizing, and booking memorable experiences. Built for attendees, artists, and innovative event organizers worldwide.
             </p>
-            <div className="flex items-center gap-4 pt-2 text-slate-400 text-sm">
-              <span className="flex items-center gap-1.5"><Shield className="w-4 h-4 text-emerald-400" /> SSL 256-Bit Secure</span>
-              <span className="flex items-center gap-1.5"><Award className="w-4 h-4 text-amber-400" /> Verified Hosts</span>
-            </div>
           </div>
 
-          {/* Col 2: Discover */}
+          {/* Discover */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Discover</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/events" className="hover:text-indigo-400 transition">All Events Catalog</Link></li>
-              <li><Link to="/events?category=Technology" className="hover:text-indigo-400 transition">Tech Conferences</Link></li>
-              <li><Link to="/events?category=Music" className="hover:text-indigo-400 transition">Music & Concerts</Link></li>
-              <li><Link to="/events?category=Business" className="hover:text-indigo-400 transition">Startup Summits</Link></li>
-              <li><Link to="/events?category=Art%20%26%20Design" className="hover:text-indigo-400 transition">Art Exhibitions</Link></li>
+              <li><Link to="/events" className="hover:text-indigo-400 transition">Browse Events</Link></li>
             </ul>
           </div>
 
-          {/* Col 3: Customer Portal */}
+          {/* Account */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">My Account</h4>
+            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Account</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/my-bookings" className="hover:text-indigo-400 transition">My Reserved Tickets</Link></li>
-              <li><Link to="/profile" className="hover:text-indigo-400 transition">Attendee Profile</Link></li>
-              <li><Link to="/events?saved=true" className="hover:text-indigo-400 transition">Saved Events</Link></li>
-              <li><Link to="/login" className="hover:text-indigo-400 transition">Account Sign In</Link></li>
-              <li><Link to="/register" className="hover:text-indigo-400 transition">Create Free Account</Link></li>
-            </ul>
-          </div>
-
-          {/* Col 4: Platform & Support */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Management</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/admin" className="hover:text-indigo-400 transition">Admin Dashboard</Link></li>
-              <li><Link to="/admin" className="hover:text-indigo-400 transition">Create New Event</Link></li>
-              <li><Link to="/admin" className="hover:text-indigo-400 transition">Venue Management</Link></li>
-              <li><span className="text-slate-500 cursor-not-allowed">API Documentation (v1.0)</span></li>
-              <li><span className="text-slate-500 cursor-not-allowed">Help Center & FAQ</span></li>
+              <li><Link to="/my-bookings" className="hover:text-indigo-400 transition">{bookingsLabel}</Link></li>
+              <li><Link to="/profile" className="hover:text-indigo-400 transition">Profile</Link></li>
+              <li><Link to="/login" className="hover:text-indigo-400 transition">Sign In</Link></li>
+              <li><Link to="/register" className="hover:text-indigo-400 transition">Create Account</Link></li>
+              {currentUser?.role === 'ADMIN' && (
+                <li><Link to="/admin" className="hover:text-indigo-400 transition">Admin Dashboard</Link></li>
+              )}
             </ul>
           </div>
         </div>
@@ -126,12 +109,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>&copy; {new Date().getFullYear()} EventHub Inc. Designed with precision for enterprise and modern ticketing.</p>
-          <div className="flex items-center space-x-6">
-            <span className="flex items-center gap-1 hover:text-slate-400 cursor-pointer">
-              <Globe className="w-3.5 h-3.5" /> English (US)
-            </span>
-            <span className="hover:text-slate-400 cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-slate-400 cursor-pointer">Terms of Service</span>
+          <div className="flex items-center">
             <span className="flex items-center gap-1 text-slate-400">
               Made with <Heart className="w-3 h-3 text-rose-500 inline fill-rose-500" /> for community
             </span>
@@ -142,4 +120,3 @@ export const Footer: React.FC = () => {
     </footer>
   );
 };
-
