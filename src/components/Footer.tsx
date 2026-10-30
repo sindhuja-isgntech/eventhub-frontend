@@ -8,6 +8,7 @@ export const Footer: React.FC = () => {
   const [subscribed, setSubscribed] = useState(false);
   const { showToast, currentUser } = useApp();
   const bookingsLabel = currentUser?.role === 'ADMIN' ? 'All Bookings' : 'My Bookings';
+  const bookingsPath = currentUser?.role === 'ADMIN' ? '/admin/bookings' : '/my-bookings';
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +96,7 @@ export const Footer: React.FC = () => {
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Account</h4>
             <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/my-bookings" className="hover:text-indigo-400 transition">{bookingsLabel}</Link></li>
+              <li><Link to={bookingsPath} className="hover:text-indigo-400 transition">{bookingsLabel}</Link></li>
               <li><Link to="/profile" className="hover:text-indigo-400 transition">Profile</Link></li>
               <li><Link to="/login" className="hover:text-indigo-400 transition">Sign In</Link></li>
               <li><Link to="/register" className="hover:text-indigo-400 transition">Create Account</Link></li>

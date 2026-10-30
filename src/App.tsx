@@ -57,10 +57,10 @@ export function App() {
             </Route>
             <Route path="/profile" element={<Profile />} />
             <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/events" element={<AdminDashboard />} />
-              <Route path="/admin/categories" element={<AdminDashboard />} />
-              <Route path="/admin/venues" element={<AdminDashboard />} />
+              <Route path="/admin" element={<AdminDashboard key="admin-events" />} />
+              <Route path="/admin/events" element={<AdminDashboard key="admin-events-route" initialTab="events" />} />
+              <Route path="/admin/categories" element={<AdminDashboard key="admin-categories" initialTab="categories" />} />
+              <Route path="/admin/venues" element={<AdminDashboard key="admin-venues" initialTab="venues" />} />
               <Route path="/admin/bookings" element={<AdminBookings />} />
             </Route>
             <Route path="*" element={<NotFound />} />

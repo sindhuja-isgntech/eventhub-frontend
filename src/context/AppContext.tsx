@@ -271,13 +271,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         categoryService.getAllCategories()
       ]);
 
-      if (backendEvents.status === 'fulfilled' && Array.isArray(backendEvents.value) && backendEvents.value.length > 0) {
+      if (backendEvents.status === 'fulfilled' && Array.isArray(backendEvents.value)) {
         const mapped = backendEvents.value.map(mapBackendEvent);
         setEvents(mapped);
         localStorage.setItem('eventhub_events', JSON.stringify(mapped));
       }
 
-      if (backendCategories.status === 'fulfilled' && Array.isArray(backendCategories.value) && backendCategories.value.length > 0) {
+      if (backendCategories.status === 'fulfilled' && Array.isArray(backendCategories.value)) {
         setCategories(backendCategories.value);
       }
     } catch (err) {

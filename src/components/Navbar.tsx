@@ -41,6 +41,7 @@ export const Navbar: React.FC = () => {
 
   const confirmedBookingsCount = bookings.filter(b => b.status === 'CONFIRMED').length;
   const bookingsLabel = currentUser?.role === 'ADMIN' ? 'All Bookings' : 'My Bookings';
+  const bookingsPath = currentUser?.role === 'ADMIN' ? '/admin/bookings' : '/my-bookings';
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs transition-all">
@@ -102,7 +103,7 @@ export const Navbar: React.FC = () => {
             </NavLink>
 
             <NavLink
-              to="/my-bookings"
+              to={bookingsPath}
               className={({ isActive }) =>
                 `px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 relative ${
                   isActive ? 'text-indigo-600 bg-indigo-50/80 font-bold' : 'hover:text-indigo-600 hover:bg-slate-50'
@@ -183,7 +184,7 @@ export const Navbar: React.FC = () => {
                         <UserIcon className="w-4 h-4 mr-2.5 text-slate-400" /> My Profile
                       </Link>
                       <Link
-                        to="/my-bookings"
+                        to={bookingsPath}
                         className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
                       >
                         <Ticket className="w-4 h-4 mr-2.5 text-slate-400" /> {bookingsLabel}
@@ -268,7 +269,7 @@ export const Navbar: React.FC = () => {
                 Explore Events
               </Link>
               <Link
-                to="/my-bookings"
+                to={bookingsPath}
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition flex justify-between items-center"
               >

@@ -1,15 +1,76 @@
 import axios from 'axios';
 import type { BookingRecord, User } from '../types';
+import type { EventCategory, Venue } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const AUTH_TOKEN_KEY = 'eventhub_access_token';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+api.interceptors.request.use(config => {
+  const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+    return Promise.reject(error);
+  },
+);
+
+export interface AdminEventRecord {
+  id: number;
+  title: string;
+  description: string;
+  category: EventCategory;
+  venue: Venue;
+  dateTime: string;
+  price: number;
+  totalSeats: number;
+  availableSeats: number;
+  imageUrl: string;
+  organizer: string;
+  featured: boolean;
+  status: string;
+}
+
+export interface EventManagementRequest {
+  title: string;
+  description: string;
+  categoryId: number;
+  venueId: number;
+  dateTime: string;
+  price: number;
+  totalSeats: number;
+  imageUrl: string;
+  organizer: string;
+  featured: boolean;
+}
+
+export interface CategoryManagementRequest {
+  name: string;
+  description: string;
+  status: string;
+}
+
+export interface VenueManagementRequest {
+  name: string;
+  address: string;
+  city: string;
+  capacity: number;
+}
 
 export const getApiErrorMessage = (error: unknown, fallback: string): string => {
   if (!axios.isAxiosError(error)) {
@@ -17,7 +78,8 @@ export const getApiErrorMessage = (error: unknown, fallback: string): string => 
   }
 
   if (!error.response) {
-    return 'Cannot connect to the EventHub backend. Start the backend server and confirm it is available at http://localhost:8080.';
+    const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+    return `Cannot connect to the EventHub backend. Start the backend server and confirm it is available at ${backendOrigin}.`;
   }
 
   const responseData: unknown = error.response.data;
@@ -46,19 +108,21 @@ export const authService = {
     phone: string;
     role: 'CUSTOMER' | 'ORGANIZER';
   }): Promise<User> => {
-    const response = await api.post<User>('/auth/register', userData);
-    return response.data;
+    const response = await api.post<{ token: string; user: User }>('/auth/register', userData);
+    sessionStorage.setItem(AUTH_TOKEN_KEY, response.data.token);
+    return response.data.user;
   },
   login: async (credentials: { email: string; password: string }): Promise<User> => {
-    const response = await api.post<User>('/auth/login', credentials);
-    return response.data;
+    const response = await api.post<{ token: string; user: User }>('/auth/login', credentials);
+    sessionStorage.setItem(AUTH_TOKEN_KEY, response.data.token);
+    return response.data.user;
   },
   getCurrentUser: async (): Promise<User> => {
     const response = await api.get<User>('/auth/me');
     return response.data;
   },
   logout: async (): Promise<void> => {
-    await api.post('/auth/logout');
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
   },
   forgotPassword: async (email: string): Promise<void> => {
     await api.post('/auth/forgot-password', { email });
@@ -79,8 +143,8 @@ export const eventService = {
     const response = await api.get(`/events/${id}`);
     return response.data;
   },
-  createEvent: async (eventData: any) => {
-    const response = await api.post('/events', eventData);
+  createEvent: async (eventData: EventManagementRequest): Promise<AdminEventRecord> => {
+    const response = await api.post<AdminEventRecord>('/events', eventData);
     return response.data;
   }
 };
@@ -91,8 +155,8 @@ export const categoryService = {
     const response = await api.get('/categories');
     return response.data;
   },
-  createCategory: async (categoryData: any) => {
-    const response = await api.post('/categories', categoryData);
+  createCategory: async (categoryData: CategoryManagementRequest): Promise<EventCategory> => {
+    const response = await api.post<EventCategory>('/categories', categoryData);
     return response.data;
   }
 };
@@ -103,8 +167,8 @@ export const venueService = {
     const response = await api.get('/venues');
     return response.data;
   },
-  createVenue: async (venueData: any) => {
-    const response = await api.post('/venues', venueData);
+  createVenue: async (venueData: VenueManagementRequest): Promise<Venue> => {
+    const response = await api.post<Venue>('/venues', venueData);
     return response.data;
   }
 };
@@ -132,20 +196,36 @@ export const bookingService = {
 
 // Administrative & User Profile Services
 export const adminService = {
-  // Categories & Venues
-  deleteCategory: async (id: number) => (await api.delete(`/admin/categories/${id}`)).data,
-  deleteVenue: async (id: number) => (await api.delete(`/admin/venues/${id}`)).data,
+  getAllEvents: async (): Promise<AdminEventRecord[]> => (await api.get<AdminEventRecord[]>('/admin/events')).data,
+  createEvent: async (event: EventManagementRequest): Promise<AdminEventRecord> =>
+    (await api.post<AdminEventRecord>('/admin/events', event)).data,
+  updateEvent: async (id: number, event: EventManagementRequest): Promise<AdminEventRecord> =>
+    (await api.put<AdminEventRecord>(`/admin/events/${id}`, event)).data,
+  deleteEvent: async (id: number): Promise<void> => { await api.delete(`/admin/events/${id}`); },
 
-  // Event Management
-  updateEvent: async (id: number, eventData: any) => (await api.put(`/admin/events/${id}`, eventData)).data,
-  deleteEvent: async (id: number) => (await api.delete(`/admin/events/${id}`)).data,
+  getAllCategories: async (): Promise<EventCategory[]> =>
+    (await api.get<EventCategory[]>('/admin/categories')).data,
+  createCategory: async (category: CategoryManagementRequest): Promise<EventCategory> =>
+    (await api.post<EventCategory>('/admin/categories', category)).data,
+  updateCategory: async (id: number, category: CategoryManagementRequest): Promise<EventCategory> =>
+    (await api.put<EventCategory>(`/admin/categories/${id}`, category)).data,
+  deleteCategory: async (id: number): Promise<void> => { await api.delete(`/admin/categories/${id}`); },
+
+  getAllVenues: async (): Promise<Venue[]> => (await api.get<Venue[]>('/admin/venues')).data,
+  createVenue: async (venue: VenueManagementRequest): Promise<Venue> =>
+    (await api.post<Venue>('/admin/venues', venue)).data,
+  updateVenue: async (id: number, venue: VenueManagementRequest): Promise<Venue> =>
+    (await api.put<Venue>(`/admin/venues/${id}`, venue)).data,
+  deleteVenue: async (id: number): Promise<void> => { await api.delete(`/admin/venues/${id}`); },
 
   // Booking Operations
   getAllBookings: async (): Promise<BookingRecord[]> => (await api.get<BookingRecord[]>('/admin/bookings')).data,
   updateBookingStatus: async (id: number, status: string) =>
     (await api.patch<BookingRecord>(`/admin/bookings/${id}/status`, null, { params: { status } })).data,
+  deleteBooking: async (id: number): Promise<void> => { await api.delete(`/admin/bookings/${id}`); },
 
   // Profile Management
-  getProfile: async (userId: number) => (await api.get(`/admin/users/${userId}`)).data,
-  updateProfile: async (userId: number, userData: any) => (await api.put(`/admin/users/${userId}`, userData)).data,
+  getProfile: async (userId: number): Promise<User> => (await api.get<User>(`/admin/users/${userId}`)).data,
+  updateProfile: async (userId: number, userData: Partial<Pick<User, 'name' | 'phone'>>): Promise<User> =>
+    (await api.put<User>(`/admin/users/${userId}`, userData)).data,
 };

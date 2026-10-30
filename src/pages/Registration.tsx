@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { Calendar, User, Mail, Lock, Phone, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { CalendarDays, User, Mail, Lock, Phone, Eye, EyeOff, Sparkles, AlertCircle } from 'lucide-react';
 import { getApiErrorMessage } from '../services/api';
 
 export const Registration: React.FC = () => {
@@ -44,27 +44,57 @@ export const Registration: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 space-y-6">
-        
+    <main className="relative min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/20 to-slate-100 px-4 py-12 sm:px-6 overflow-hidden">
+      {/* Decorative ambient background glows */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-20 -top-20 -z-10 h-72 w-72 rounded-full bg-indigo-200/40 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-20 -bottom-20 -z-10 h-80 w-80 rounded-full bg-violet-200/35 blur-3xl"
+      />
+
+      {/* Registration Card with strict max-width constraint */}
+      <div
+        className="w-full max-w-md mx-auto bg-white rounded-3xl border border-slate-200/90 shadow-2xl shadow-slate-900/10 p-7 sm:p-9 space-y-6 relative z-10 backdrop-blur-sm"
+        style={{ maxWidth: '440px' }}
+      >
         {/* Header */}
-        <div className="text-center space-y-2">
-          <Link to="/" className="inline-flex p-3 bg-indigo-50 text-indigo-600 rounded-2xl shadow-xs hover:scale-105 transition-transform">
-            <Calendar className="w-8 h-8" />
+        <header className="text-center space-y-3">
+          <Link
+            to="/"
+            aria-label="EventHub home"
+            className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/25 ring-4 ring-indigo-50 transition-transform hover:scale-105"
+          >
+            <CalendarDays className="h-7 w-7" strokeWidth={2.2} />
           </Link>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Create an Account</h1>
-          <p className="text-xs text-slate-500">Join thousands of eventgoers and top-tier organizers.</p>
-        </div>
+
+          <div>
+            <span className="inline-block px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 rounded-full">
+              Get Started with EventHub
+            </span>
+            <h1 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              Create an Account
+            </h1>
+            <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-xs mx-auto leading-relaxed">
+              Join thousands of eventgoers and top-tier organizers worldwide.
+            </p>
+          </div>
+        </header>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Full Name
             </label>
-            <div className="relative">
-              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
+            <div className="group relative">
+              <User
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-600"
+              />
               <input
                 type="text"
                 name="name"
@@ -72,17 +102,21 @@ export const Registration: React.FC = () => {
                 placeholder="Jane Doe"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+          {/* Email Address */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Email Address
             </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
+            <div className="group relative">
+              <Mail
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-600"
+              />
               <input
                 type="email"
                 name="email"
@@ -90,34 +124,42 @@ export const Registration: React.FC = () => {
                 placeholder="jane@example.com"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+          {/* Phone Number */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Phone Number
             </label>
-            <div className="relative">
-              <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
+            <div className="group relative">
+              <Phone
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-600"
+              />
               <input
                 type="tel"
                 name="phone"
                 placeholder="+1 (555) 000-0000"
                 value={formData.phone}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+          {/* Password */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Password
             </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
+            <div className="group relative">
+              <Lock
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-600"
+              />
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -126,31 +168,32 @@ export const Registration: React.FC = () => {
                 placeholder="At least 8 characters"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-11 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition cursor-pointer"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
 
-          {/* Role selector */}
-          <div className="pt-1">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-1">
+          {/* Account Type Selection */}
+          <div className="pt-1 space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
               Account Type
             </label>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'CUSTOMER' })}
-                className={`py-2 px-3 rounded-xl font-bold border transition ${
+                className={`py-2.5 px-3 rounded-xl font-bold border transition-all cursor-pointer ${
                   formData.role === 'CUSTOMER'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-slate-50 text-slate-600 border-slate-200'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 Attendee
@@ -158,10 +201,10 @@ export const Registration: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, role: 'ORGANIZER' })}
-                className={`py-2 px-3 rounded-xl font-bold border transition ${
+                className={`py-2.5 px-3 rounded-xl font-bold border transition-all cursor-pointer ${
                   formData.role === 'ORGANIZER'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
-                    : 'bg-slate-50 text-slate-600 border-slate-200'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 Event Organizer
@@ -169,30 +212,37 @@ export const Registration: React.FC = () => {
             </div>
           </div>
 
+          {/* Error Message */}
           {errorMessage && (
-            <p role="alert" className="text-sm text-red-600">{errorMessage}</p>
+            <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+              <span>{errorMessage}</span>
+            </div>
           )}
 
+          {/* Submit button */}
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-md shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm mt-3"
+            className="group w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none mt-2"
           >
-            <Sparkles className="w-4 h-4" />
-            <span>{isSubmitting ? 'Creating Account...' : 'Create Account'}</span>
+            <Sparkles className="h-4 w-4 transition-transform group-hover:scale-110" />
+            <span>{isSubmitting ? 'Creating Account…' : 'Create Account'}</span>
           </button>
         </form>
 
-        {/* Footer Link */}
-        <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">
+        {/* Footer */}
+        <footer className="pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
           Already have an account?{' '}
-          <Link to="/login" className="text-indigo-600 font-bold hover:underline">
-            Sign In
+          <Link
+            to="/login"
+            className="font-bold text-indigo-600 transition hover:text-indigo-800 hover:underline ml-1"
+          >
+            Sign in
           </Link>
-        </div>
-
+        </footer>
       </div>
-    </div>
+    </main>
   );
 };
 
