@@ -151,19 +151,21 @@ export const Navbar: React.FC = () => {
           {/* Right Action Icons & Auth Profile */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Saved Items Counter Icon */}
-            <Link
-              to="/events?saved=true"
-              className="relative p-2.5 text-slate-500 hover:text-rose-500 hover:bg-rose-50 rounded-2xl border border-transparent hover:border-rose-100 transition duration-200"
-              title="Saved Events"
-            >
-              <Heart className={`w-5 h-5 transition-transform duration-200 hover:scale-110 ${savedEventIds.length > 0 ? 'text-rose-500 fill-rose-50' : ''}`} />
-              {savedEventIds.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white" />
-                </span>
-              )}
-            </Link>
+            {currentUser && (
+              <Link
+                to="/events?saved=true"
+                className="relative p-2.5 text-slate-500 hover:text-rose-500 hover:bg-rose-50 rounded-2xl border border-transparent hover:border-rose-100 transition duration-200"
+                title="Saved Events"
+              >
+                <Heart className={`w-5 h-5 transition-transform duration-200 hover:scale-110 ${savedEventIds.length > 0 ? 'text-rose-500 fill-rose-50' : ''}`} />
+                {savedEventIds.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white" />
+                  </span>
+                )}
+              </Link>
+            )}
 
             {currentUser ? (
               <div className="relative">
@@ -172,11 +174,9 @@ export const Navbar: React.FC = () => {
                   onBlur={() => setTimeout(() => setProfileDropdownOpen(false), 200)}
                   className="flex items-center space-x-2.5 p-1.5 rounded-2xl hover:bg-slate-100/80 border border-slate-200/80 transition-all duration-200 focus:outline-none cursor-pointer"
                 >
-                  <img
-                    src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
-                    alt={currentUser.name}
-                    className="w-8 h-8 rounded-xl object-cover ring-2 ring-indigo-500/20"
-                  />
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 ring-2 ring-indigo-500/10">
+                    <UserIcon className="h-4 w-4" aria-hidden="true" />
+                  </span>
                   <div className="hidden xl:flex flex-col text-left">
                     <span className="text-xs font-bold text-slate-900 leading-tight">{currentUser.name}</span>
                     <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">{currentUser.role}</span>

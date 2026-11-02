@@ -23,7 +23,7 @@ type PriceFilter = 'All' | 'under5000' | '5000to10000' | 'over10000';
 type EventSort = 'soonest' | 'priceLow' | 'priceHigh' | 'seats';
 
 export const EventListing: React.FC = () => {
-  const { events, categories, savedEventIds, isLoading, refreshEvents } = useApp();
+  const { events, categories, currentUser, savedEventIds, isLoading, refreshEvents } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
   const savedEventsCount = events.filter(event => savedEventIds.includes(event.id)).length;
 
@@ -34,7 +34,7 @@ export const EventListing: React.FC = () => {
   const [priceFilter, setPriceFilter] = useState<PriceFilter>('All');
   const [sortBy, setSortBy] = useState<EventSort>('soonest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [showOnlySaved, setShowOnlySaved] = useState(searchParams.get('saved') === 'true');
+  const showOnlySaved = Boolean(currentUser) && searchParams.get('saved') === 'true';
 
   // Unique cities from backend events
   const cities = useMemo(() => {
@@ -102,7 +102,6 @@ export const EventListing: React.FC = () => {
     setSelectedCategory('All');
     setSelectedCity('All');
     setPriceFilter('All');
-    setShowOnlySaved(false);
     setSearchParams({});
   };
 
@@ -146,25 +145,25 @@ export const EventListing: React.FC = () => {
               <span>{isLoading ? 'Syncing…' : 'Sync Backend'}</span>
             </button>
 
-            {/* Quick Toggle for Saved Events */}
-            <button
-              onClick={() => {
-                setShowOnlySaved(!showOnlySaved);
-                setSearchParams(prev => {
-                  if (!showOnlySaved) prev.set('saved', 'true');
-                  else prev.delete('saved');
-                  return prev;
-                });
-              }}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold border transition-all shadow-xs cursor-pointer ${
-                showOnlySaved
-                  ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-500/10'
-                  : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
-              }`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${showOnlySaved ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
-              <span>Saved ({savedEventsCount})</span>
-            </button>
+            {currentUser && (
+              <button
+                onClick={() => {
+                  setSearchParams(prev => {
+                    if (!showOnlySaved) prev.set('saved', 'true');
+                    else prev.delete('saved');
+                    return prev;
+                  });
+                }}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold border transition-all shadow-xs cursor-pointer ${
+                  showOnlySaved
+                    ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-rose-500/10'
+                    : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                }`}
+              >
+                <Heart className={`w-3.5 h-3.5 ${showOnlySaved ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                <span>Saved ({savedEventsCount})</span>
+              </button>
+            )}
           </div>
         </div>
 

@@ -110,7 +110,7 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-extrabold text-slate-200 uppercase tracking-wider">Discover</h4>
             <ul className="space-y-2 text-xs text-slate-400 font-medium">
               <li><Link to="/events" className="hover:text-indigo-400 transition">Browse All Events</Link></li>
-              <li><Link to="/events?saved=true" className="hover:text-indigo-400 transition">Saved Events</Link></li>
+              {currentUser && <li><Link to="/events?saved=true" className="hover:text-indigo-400 transition">Saved Events</Link></li>}
               <li><Link to="/events?city=Bengaluru" className="hover:text-indigo-400 transition">Bengaluru Events</Link></li>
               <li><Link to="/events?city=Mumbai" className="hover:text-indigo-400 transition">Mumbai Events</Link></li>
             </ul>

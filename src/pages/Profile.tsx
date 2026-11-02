@@ -39,15 +39,6 @@ export const Profile: React.FC = () => {
         {/* Subtle background glow */}
         <div aria-hidden="true" className="absolute -right-20 -top-20 w-60 h-60 bg-indigo-100/50 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative">
-          <img
-            src={currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
-            alt="Profile Avatar"
-            className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover ring-4 ring-indigo-50 shadow-md"
-          />
-          <span className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white ring-1 ring-slate-100" />
-        </div>
-
         <div className="space-y-2 text-center sm:text-left flex-1 relative z-10">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{name}</h1>

@@ -239,10 +239,9 @@ const mapBookingRecord = (record: BookingRecord): Booking => ({
   bookingDate: record.bookingDate,
 });
 
-const savedEventsStorageKey = (user: User | null) =>
-  `eventhub_saved_events_${user ? `user_${user.id}` : 'guest'}`;
+const savedEventsStorageKey = (user: User) => `eventhub_saved_events_user_${user.id}`;
 
-const readSavedEventIds = (user: User | null): number[] => {
+const readSavedEventIds = (user: User): number[] => {
   try {
     const stored = localStorage.getItem(savedEventsStorageKey(user));
     const parsed: unknown = stored ? JSON.parse(stored) : [];
@@ -323,7 +322,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (error?.response?.status !== 401) {
             console.error('Unable to restore the current session.', error);
           }
-          setSavedEventIds(readSavedEventIds(null));
+          setSavedEventIds([]);
         }
       })
       .finally(() => {
@@ -384,7 +383,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = async () => {
     await authService.logout();
     setCurrentUser(null);
-    setSavedEventIds(readSavedEventIds(null));
+    setSavedEventIds([]);
     setBookings([]);
     setBookingsLoading(false);
     showToast('You have signed out successfully.', 'info');
@@ -406,6 +405,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleSaveEvent = (eventId: number) => {
+    if (!currentUser) {
+      showToast('Please sign in to save experiences.', 'info');
+      return;
+    }
+
     const isSaved = savedEventIds.includes(eventId);
     const updatedIds = isSaved
       ? savedEventIds.filter(id => id !== eventId)

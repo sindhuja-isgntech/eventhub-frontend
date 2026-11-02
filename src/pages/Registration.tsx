@@ -13,7 +13,6 @@ export const Registration: React.FC = () => {
     email: '',
     phone: '',
     password: '',
-    role: 'CUSTOMER' as 'CUSTOMER' | 'ORGANIZER',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -33,7 +32,7 @@ export const Registration: React.FC = () => {
         formData.email,
         `+91${formData.phone}`,
         formData.password,
-        formData.role,
+        'CUSTOMER',
       );
       navigate(user.role === 'ADMIN' ? '/admin' : '/events');
     } catch (error) {
@@ -192,37 +191,6 @@ export const Registration: React.FC = () => {
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition cursor-pointer"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Account Type Selection */}
-          <div className="pt-1 space-y-1.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-              Account Type
-            </label>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, role: 'CUSTOMER' })}
-                className={`py-2.5 px-3 rounded-xl font-bold border transition-all cursor-pointer ${
-                  formData.role === 'CUSTOMER'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                Attendee
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, role: 'ORGANIZER' })}
-                className={`py-2.5 px-3 rounded-xl font-bold border transition-all cursor-pointer ${
-                  formData.role === 'ORGANIZER'
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                Event Organizer
               </button>
             </div>
           </div>
