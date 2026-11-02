@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { bookingService } from '../services/api';
+import { formatCurrency, formatIndianDateTime } from '../utils/format';
 
 export const BookingDetails: React.FC = () => {
   const { id } = useParams();
@@ -49,7 +50,7 @@ export const BookingDetails: React.FC = () => {
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-600 bg-slate-50 p-4 rounded-xl">
           <div>
             <dt className="font-semibold text-slate-700">Date & Time</dt>
-            <dd className="m-0">{event?.dateTime ? new Date(event.dateTime).toLocaleString() : 'N/A'}</dd>
+            <dd className="m-0">{event?.dateTime ? formatIndianDateTime(event.dateTime, { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A'}</dd>
           </div>
           <div>
             <dt className="font-semibold text-slate-700">Venue</dt>
@@ -61,7 +62,7 @@ export const BookingDetails: React.FC = () => {
           </div>
           <div>
             <dt className="font-semibold text-slate-700">Total Amount</dt>
-            <dd className="m-0 font-bold text-slate-900">${booking.totalAmount?.toFixed(2)}</dd>
+            <dd className="m-0 font-bold text-slate-900">{formatCurrency(booking.totalAmount ?? 0)}</dd>
           </div>
         </dl>
 

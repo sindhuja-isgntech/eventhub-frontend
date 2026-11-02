@@ -3,6 +3,7 @@ import { adminService } from '../../services/api';
 import type { AdminEventRecord } from '../../services/api';
 import { Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { formatCurrency } from '../../utils/format';
 
 export const AdminEventManagement: React.FC = () => {
   const [events, setEvents] = useState<AdminEventRecord[]>([]);
@@ -55,7 +56,7 @@ export const AdminEventManagement: React.FC = () => {
             {events.map(event => (
               <tr key={event.id}>
                 <td className="p-4 font-semibold text-slate-900">{event.title}</td>
-                <td className="p-4">${event.price}</td>
+                <td className="p-4">{formatCurrency(event.price)}</td>
                 <td className="p-4">{event.availableSeats}/{event.totalSeats}</td>
                 <td className="p-4">
                   <button

@@ -48,12 +48,6 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleAutofillDemo = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setErrorMessage('');
-  };
-
   return (
     <main className="relative min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/20 to-slate-100 px-4 py-12 sm:px-6 overflow-hidden">
       {/* Decorative ambient background glows */}
@@ -105,25 +99,6 @@ export const Login: React.FC = () => {
             </p>
           )}
         </header>
-
-        {/* Quick Demo Credentials Autofill Banner */}
-        {!isForgotPassword && (
-          <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs text-indigo-950 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 truncate">
-              <Sparkles className="h-4 w-4 text-indigo-600 shrink-0" />
-              <span className="truncate">
-                Demo: <strong className="font-semibold text-indigo-900">alex.morgan@example.com</strong>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleAutofillDemo('alex.morgan@example.com', 'demo123')}
-              className="shrink-0 rounded-lg bg-white px-2.5 py-1 text-[11px] font-bold text-indigo-600 shadow-xs border border-indigo-200 hover:bg-indigo-600 hover:text-white transition cursor-pointer"
-            >
-              Autofill
-            </button>
-          </div>
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -264,6 +239,11 @@ export const Login: React.FC = () => {
           >
             Create an account
           </Link>
+          <div className="mt-3">
+            <Link to="/" className="font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline">
+              Return to Homepage
+            </Link>
+          </div>
         </footer>
       </div>
     </main>

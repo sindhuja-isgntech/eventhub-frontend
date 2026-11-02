@@ -11,6 +11,7 @@ import type {
 } from '../services/api';
 import type { BookingRecord, EventCategory, Venue } from '../types';
 import { useApp } from '../context/AppContext';
+import { formatCurrency, formatIndianDateTime } from '../utils/format';
 
 type AdminTab = 'events' | 'categories' | 'venues' | 'bookings';
 type FormKind = 'event' | 'category' | 'venue';
@@ -360,7 +361,7 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
         <SummaryCard icon={<Calendar className="h-5 w-5" />} label="Events" value={String(events.length)} />
         <SummaryCard icon={<Layers className="h-5 w-5" />} label="Categories" value={String(categories.length)} />
         <SummaryCard icon={<Users className="h-5 w-5" />} label="Confirmed Tickets" value={String(totalTickets)} />
-        <SummaryCard icon={<Building className="h-5 w-5" />} label="Confirmed Revenue" value={`$${totalRevenue.toFixed(2)}`} />
+        <SummaryCard icon={<Building className="h-5 w-5" />} label="Confirmed Revenue" value={formatCurrency(totalRevenue)} />
       </section>
 
       <nav className="flex gap-2 overflow-x-auto border-b border-slate-200" aria-label="Admin management sections">
@@ -399,10 +400,10 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
               </tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {events.map(event => <tr key={event.id}>
-                  <td className="px-5 py-4"><p className="font-semibold text-slate-900">{event.title}</p><p className="text-xs text-slate-500">${event.price.toFixed(2)}</p></td>
+                  <td className="px-5 py-4"><p className="font-semibold text-slate-900">{event.title}</p><p className="text-xs text-slate-500">{formatCurrency(event.price)}</p></td>
                   <td className="px-5 py-4">{event.category.name}</td>
                   <td className="px-5 py-4">{event.venue.name}, {event.venue.city}</td>
-                  <td className="px-5 py-4">{new Date(event.dateTime).toLocaleString()}</td>
+                  <td className="px-5 py-4">{formatIndianDateTime(event.dateTime, { dateStyle: 'medium', timeStyle: 'short' })}</td>
                   <td className="px-5 py-4">{event.availableSeats} / {event.totalSeats}</td>
                   <td className="px-5 py-4"><RowActions
                     onView={() => setViewRecord({ kind: 'event', value: event })}
@@ -463,7 +464,7 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
                   <td className="px-5 py-4 font-mono font-semibold">EH-{booking.id}</td>
                   <td className="px-5 py-4"><p className="font-semibold text-slate-900">{booking.customerName}</p><p className="text-xs text-slate-500">{booking.customerEmail}</p></td>
                   <td className="px-5 py-4">{booking.eventTitle}</td>
-                  <td className="px-5 py-4">{booking.ticketCount} ticket(s) · ${booking.totalAmount.toFixed(2)}</td>
+                  <td className="px-5 py-4">{booking.ticketCount} ticket(s) · {formatCurrency(booking.totalAmount)}</td>
                   <td className="px-5 py-4"><select
                     aria-label={`Update status for booking EH-${booking.id}`}
                     value={booking.status}
@@ -507,7 +508,7 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextField label="Date and time" type="datetime-local" required value={eventForm.dateTime} onChange={value => setEventForm(current => ({ ...current, dateTime: value }))} />
-                  <TextField label="Price" type="number" min="0.01" step="0.01" required value={eventForm.price} onChange={value => setEventForm(current => ({ ...current, price: value }))} />
+                  <TextField label="Price (INR ₹)" type="number" min="0.01" step="0.01" required value={eventForm.price} onChange={value => setEventForm(current => ({ ...current, price: value }))} />
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextField label="Total seats" type="number" min="1" required value={eventForm.totalSeats} onChange={value => setEventForm(current => ({ ...current, totalSeats: value }))} />
@@ -528,7 +529,7 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
             {formKind === 'venue' && <>
               <TextField label="Name" required value={venueForm.name} onChange={value => setVenueForm(current => ({ ...current, name: value }))} />
               <TextField label="Address" value={venueForm.address} onChange={value => setVenueForm(current => ({ ...current, address: value }))} />
-              <TextField label="City" required value={venueForm.city} onChange={value => setVenueForm(current => ({ ...current, city: value }))} />
+              <TextField label="City (India)" required value={venueForm.city} onChange={value => setVenueForm(current => ({ ...current, city: value }))} />
               <TextField label="Capacity" type="number" min="1" required value={venueForm.capacity} onChange={value => setVenueForm(current => ({ ...current, capacity: value }))} />
             </>}
             {(formKind === 'event' && (categories.length === 0 || venues.length === 0)) && <p className="text-sm text-amber-700">Create a category and venue first to add an event.</p>}
@@ -552,8 +553,8 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
             {viewRecord.kind === 'event' && <>
               <Detail label="Title" value={viewRecord.value.title} /><Detail label="Category" value={viewRecord.value.category.name} />
               <Detail label="Venue" value={`${viewRecord.value.venue.name}, ${viewRecord.value.venue.city}`} />
-              <Detail label="Date" value={new Date(viewRecord.value.dateTime).toLocaleString()} />
-              <Detail label="Price" value={`$${viewRecord.value.price.toFixed(2)}`} />
+              <Detail label="Date" value={formatIndianDateTime(viewRecord.value.dateTime, { dateStyle: 'medium', timeStyle: 'short' })} />
+              <Detail label="Price" value={formatCurrency(viewRecord.value.price)} />
               <Detail label="Seats available" value={`${viewRecord.value.availableSeats} / ${viewRecord.value.totalSeats}`} />
               <Detail label="Organizer" value={viewRecord.value.organizer || '—'} />
               <Detail label="Description" value={viewRecord.value.description || '—'} />
@@ -570,7 +571,7 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
             {viewRecord.kind === 'booking' && <>
               <Detail label="Reference" value={`EH-${viewRecord.value.id}`} /><Detail label="Customer" value={viewRecord.value.customerName} />
               <Detail label="Email" value={viewRecord.value.customerEmail} /><Detail label="Event" value={viewRecord.value.eventTitle} />
-              <Detail label="Tickets" value={String(viewRecord.value.ticketCount)} /><Detail label="Total" value={`$${viewRecord.value.totalAmount.toFixed(2)}`} />
+              <Detail label="Tickets" value={String(viewRecord.value.ticketCount)} /><Detail label="Total" value={formatCurrency(viewRecord.value.totalAmount)} />
               <Detail label="Status" value={viewRecord.value.status} /><Detail label="Booking date" value={viewRecord.value.bookingDate} />
             </>}
           </dl>

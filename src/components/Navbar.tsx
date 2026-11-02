@@ -44,21 +44,24 @@ export const Navbar: React.FC = () => {
   const bookingsPath = currentUser?.role === 'ADMIN' ? '/admin/bookings' : '/my-bookings';
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs transition-all">
+    <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/85 border-b border-slate-200/70 shadow-xs transition-all">
+      {/* Top micro gradient line */}
+      <div className="h-[2px] w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-pink-500" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 md:h-20 gap-4">
           
           {/* Brand Logo */}
           <Link to="/" className="flex items-center space-x-2.5 group shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 ring-2 ring-indigo-50 group-hover:scale-105 group-hover:rotate-3 transition-transform duration-300">
               <Calendar className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
               <span className="text-xl font-black tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">
                 Event<span className="text-indigo-600">Hub</span>
               </span>
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest -mt-1 hidden sm:block">
-                Discover & Book
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest -mt-1 hidden sm:block">
+                Experiences & Passes
               </span>
             </div>
           </Link>
@@ -71,17 +74,22 @@ export const Navbar: React.FC = () => {
               placeholder="Search concerts, summits, expos..."
               value={navSearch}
               onChange={(e) => setNavSearch(e.target.value)}
-              className="w-full bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-xs text-slate-800 placeholder-slate-400 pl-10 pr-4 py-2.5 rounded-full border border-transparent focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
+              className="w-full bg-slate-100/90 hover:bg-slate-100 focus:bg-white text-xs font-medium text-slate-800 placeholder-slate-400 pl-10 pr-9 py-2.5 rounded-full border border-slate-200/60 focus:border-indigo-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-inner"
             />
+            <span className="absolute right-3 text-[10px] font-mono text-slate-400 bg-white/80 border border-slate-200 px-1.5 py-0.5 rounded-md pointer-events-none">
+              ↵
+            </span>
           </form>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 text-sm font-semibold text-slate-600">
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-1.5 text-sm font-semibold text-slate-600">
             <NavLink
               to="/"
               className={({ isActive }) =>
-                `px-3.5 py-2 rounded-xl transition ${
-                  isActive ? 'text-indigo-600 bg-indigo-50/80 font-bold' : 'hover:text-indigo-600 hover:bg-slate-50'
+                `px-3.5 py-2 rounded-xl transition-all duration-200 ${
+                  isActive
+                    ? 'text-indigo-600 bg-indigo-50 font-bold shadow-xs'
+                    : 'hover:text-indigo-600 hover:bg-slate-100/70'
                 }`
               }
             >
@@ -91,13 +99,15 @@ export const Navbar: React.FC = () => {
             <NavLink
               to="/events"
               className={({ isActive }) =>
-                `px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 ${
-                  isActive ? 'text-indigo-600 bg-indigo-50/80 font-bold' : 'hover:text-indigo-600 hover:bg-slate-50'
+                `px-3.5 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 ${
+                  isActive
+                    ? 'text-indigo-600 bg-indigo-50 font-bold shadow-xs'
+                    : 'hover:text-indigo-600 hover:bg-slate-100/70'
                 }`
               }
             >
               <span>Explore Events</span>
-              <span className="bg-gradient-to-r from-indigo-500 to-violet-500 text-[10px] text-white px-1.5 py-0.5 rounded-full font-bold">
+              <span className="bg-gradient-to-r from-indigo-500 to-violet-500 text-[10px] text-white px-1.5 py-0.5 rounded-full font-bold shadow-xs">
                 HOT
               </span>
             </NavLink>
@@ -105,15 +115,17 @@ export const Navbar: React.FC = () => {
             <NavLink
               to={bookingsPath}
               className={({ isActive }) =>
-                `px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 relative ${
-                  isActive ? 'text-indigo-600 bg-indigo-50/80 font-bold' : 'hover:text-indigo-600 hover:bg-slate-50'
+                `px-3.5 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 relative ${
+                  isActive
+                    ? 'text-indigo-600 bg-indigo-50 font-bold shadow-xs'
+                    : 'hover:text-indigo-600 hover:bg-slate-100/70'
                 }`
               }
             >
               <Ticket className="w-4 h-4 text-indigo-500" />
               <span>{bookingsLabel}</span>
               {confirmedBookingsCount > 0 && (
-                <span className="bg-indigo-600 text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full min-w-5 text-center">
+                <span className="bg-indigo-600 text-white text-[11px] font-extrabold px-1.5 py-0.2 rounded-full min-w-5 text-center shadow-xs">
                   {confirmedBookingsCount}
                 </span>
               )}
@@ -123,12 +135,14 @@ export const Navbar: React.FC = () => {
               <NavLink
                 to="/admin"
                 className={({ isActive }) =>
-                  `px-3 py-2 rounded-xl transition flex items-center gap-1.5 text-xs font-semibold ${
-                    isActive ? 'text-indigo-700 bg-indigo-100 font-bold' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'
+                  `px-3 py-2 rounded-xl transition-all duration-200 flex items-center gap-1.5 text-xs font-bold ${
+                    isActive
+                      ? 'text-indigo-700 bg-indigo-100 shadow-xs'
+                      : 'text-indigo-600 bg-indigo-50/70 hover:bg-indigo-100'
                   }`
                 }
               >
-                <Shield className="w-3.5 h-3.5" />
+                <Shield className="w-3.5 h-3.5 text-indigo-600" />
                 <span>Admin Portal</span>
               </NavLink>
             )}
@@ -139,12 +153,15 @@ export const Navbar: React.FC = () => {
             {/* Saved Items Counter Icon */}
             <Link
               to="/events?saved=true"
-              className="relative p-2.5 text-slate-500 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition"
+              className="relative p-2.5 text-slate-500 hover:text-rose-500 hover:bg-rose-50 rounded-2xl border border-transparent hover:border-rose-100 transition duration-200"
               title="Saved Events"
             >
-              <Heart className="w-5 h-5" />
+              <Heart className={`w-5 h-5 transition-transform duration-200 hover:scale-110 ${savedEventIds.length > 0 ? 'text-rose-500 fill-rose-50' : ''}`} />
               {savedEventIds.length > 0 && (
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white animate-pulse" />
+                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white" />
+                </span>
               )}
             </Link>
 
@@ -153,48 +170,55 @@ export const Navbar: React.FC = () => {
                 <button
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   onBlur={() => setTimeout(() => setProfileDropdownOpen(false), 200)}
-                  className="flex items-center space-x-2 p-1.5 rounded-2xl hover:bg-slate-100 border border-slate-200 transition focus:outline-none"
+                  className="flex items-center space-x-2.5 p-1.5 rounded-2xl hover:bg-slate-100/80 border border-slate-200/80 transition-all duration-200 focus:outline-none cursor-pointer"
                 >
                   <img
                     src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
                     alt={currentUser.name}
-                    className="w-8 h-8 rounded-xl object-cover ring-1 ring-indigo-500"
+                    className="w-8 h-8 rounded-xl object-cover ring-2 ring-indigo-500/20"
                   />
                   <div className="hidden xl:flex flex-col text-left">
                     <span className="text-xs font-bold text-slate-900 leading-tight">{currentUser.name}</span>
-                    <span className="text-[10px] text-slate-500 font-medium">{currentUser.role}</span>
+                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">{currentUser.role}</span>
                   </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden xl:block" />
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 hidden xl:block transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Dropdown Menu */}
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in-50 duration-150">
-                    <div className="px-4 py-3 border-b border-slate-100">
-                      <p className="text-xs text-slate-400 uppercase font-semibold">Signed in as</p>
-                      <p className="text-sm font-bold text-slate-900 truncate">{currentUser.name}</p>
+                  <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-xl border border-slate-200/80 py-2 z-50 animate-in fade-in-50 duration-150 backdrop-blur-md">
+                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Signed in as</p>
+                      <p className="text-sm font-black text-slate-900 truncate">{currentUser.name}</p>
                       <p className="text-xs text-slate-500 truncate">{currentUser.email}</p>
                     </div>
 
                     <div className="py-1">
                       <Link
                         to="/profile"
-                        className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
+                        className="flex items-center px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
                       >
                         <UserIcon className="w-4 h-4 mr-2.5 text-slate-400" /> My Profile
                       </Link>
                       <Link
                         to={bookingsPath}
-                        className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
+                        className="flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
                       >
-                        <Ticket className="w-4 h-4 mr-2.5 text-slate-400" /> {bookingsLabel}
+                        <span className="flex items-center">
+                          <Ticket className="w-4 h-4 mr-2.5 text-slate-400" /> {bookingsLabel}
+                        </span>
+                        {confirmedBookingsCount > 0 && (
+                          <span className="bg-indigo-50 text-indigo-700 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                            {confirmedBookingsCount}
+                          </span>
+                        )}
                       </Link>
                       {currentUser.role === 'ADMIN' && (
                         <Link
                           to="/admin"
-                          className="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition"
+                          className="flex items-center px-4 py-2.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition"
                         >
-                          <Shield className="w-4 h-4 mr-2.5 text-slate-400" /> Admin Console
+                          <Shield className="w-4 h-4 mr-2.5 text-indigo-600" /> Admin Console
                         </Link>
                       )}
                     </div>
@@ -202,7 +226,7 @@ export const Navbar: React.FC = () => {
                     <div className="pt-1 border-t border-slate-100">
                       <button
                         onClick={() => void handleLogout()}
-                        className="flex w-full items-center px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition"
+                        className="flex w-full items-center px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
                       >
                         <LogOut className="w-4 h-4 mr-2.5" /> Sign Out
                       </button>
@@ -214,13 +238,13 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Link
                   to="/login"
-                  className="text-slate-700 hover:text-indigo-600 text-sm font-semibold px-3 py-2 rounded-xl hover:bg-slate-50 transition"
+                  className="text-slate-700 hover:text-indigo-600 text-xs sm:text-sm font-semibold px-3 py-2 rounded-xl hover:bg-slate-100/70 transition"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-indigo-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl hover:bg-indigo-700 shadow-sm shadow-indigo-600/20 transition flex items-center gap-1.5"
+                  className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl shadow-md shadow-indigo-600/20 hover:shadow-indigo-600/30 transition-all flex items-center gap-1.5"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>Get Started</span>
@@ -241,7 +265,7 @@ export const Navbar: React.FC = () => {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-100 space-y-3">
+          <div className="md:hidden py-4 border-t border-slate-100 space-y-3 animate-in fade-in-50 duration-200">
             <form onSubmit={handleNavSearch} className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
               <input
@@ -257,21 +281,21 @@ export const Navbar: React.FC = () => {
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition"
+                className="px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition"
               >
                 Home
               </Link>
               <Link
                 to="/events"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition"
+                className="px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition"
               >
                 Explore Events
               </Link>
               <Link
                 to={bookingsPath}
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition flex justify-between items-center"
+                className="px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition flex justify-between items-center"
               >
                 <span>{bookingsLabel}</span>
                 {confirmedBookingsCount > 0 && (
@@ -283,7 +307,7 @@ export const Navbar: React.FC = () => {
               <Link
                 to="/profile"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition"
+                className="px-3.5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition"
               >
                 User Profile
               </Link>
@@ -291,7 +315,7 @@ export const Navbar: React.FC = () => {
                 <Link
                   to="/admin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition flex items-center gap-1.5"
+                  className="px-3.5 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 rounded-xl transition flex items-center gap-1.5"
                 >
                   <Shield className="w-4 h-4 text-indigo-600" /> Admin Portal
                 </Link>
@@ -309,7 +333,7 @@ export const Navbar: React.FC = () => {
                   <Link
                     to="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-xl shadow-xs"
+                    className="w-full text-center py-2.5 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-xl shadow-xs"
                   >
                     Create Account
                   </Link>

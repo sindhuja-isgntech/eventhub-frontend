@@ -31,7 +31,7 @@ export const Registration: React.FC = () => {
       const user = await register(
         formData.name,
         formData.email,
-        formData.phone,
+        `+91${formData.phone}`,
         formData.password,
         formData.role,
       );
@@ -139,15 +139,30 @@ export const Registration: React.FC = () => {
                 aria-hidden="true"
                 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-600"
               />
+              <span className="absolute left-10 top-1/2 -translate-y-1/2 border-r border-slate-200 pr-2 text-sm font-medium text-slate-600">
+                +91
+              </span>
               <input
                 type="tel"
                 name="phone"
-                placeholder="+1 (555) 000-0000"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                pattern="[6-9][0-9]{9}"
+                maxLength={10}
+                minLength={10}
+                title="Enter a valid 10-digit Indian mobile number."
+                required
+                placeholder="98765 43210"
                 value={formData.phone}
-                onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                onChange={(e) => {
+                  const phone = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setFormData({ ...formData, phone });
+                }}
+                aria-label="10-digit Indian mobile number"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-3 pl-[4.25rem] pr-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
               />
             </div>
+            <p className="text-xs text-slate-500">Enter 10 digits; the +91 country code is added automatically.</p>
           </div>
 
           {/* Password */}
@@ -240,6 +255,11 @@ export const Registration: React.FC = () => {
           >
             Sign in
           </Link>
+          <div className="mt-3">
+            <Link to="/" className="font-semibold text-indigo-600 transition hover:text-indigo-800 hover:underline">
+              Return to Homepage
+            </Link>
+          </div>
         </footer>
       </div>
     </main>

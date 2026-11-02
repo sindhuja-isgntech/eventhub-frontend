@@ -4,6 +4,7 @@ import { adminService, getApiErrorMessage } from '../../services/api';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import type { BookingRecord } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { formatCurrency } from '../../utils/format';
 
 export const AdminBookings: React.FC = () => {
   const { refreshBookings, refreshEvents } = useApp();
@@ -113,7 +114,7 @@ export const AdminBookings: React.FC = () => {
                   </td>
                   <td className="px-5 py-4">
                     <p>{booking.ticketCount} ticket(s)</p>
-                    <p className="font-semibold">${booking.totalAmount.toFixed(2)}</p>
+                    <p className="font-semibold">{formatCurrency(booking.totalAmount)}</p>
                   </td>
                   <td className="px-5 py-4">
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold">
@@ -174,7 +175,7 @@ export const AdminBookings: React.FC = () => {
               <div><dt className="text-xs font-bold uppercase text-slate-400">Event</dt><dd>{selectedBooking.eventTitle}</dd></div>
               <div><dt className="text-xs font-bold uppercase text-slate-400">Status</dt><dd>{selectedBooking.status}</dd></div>
               <div><dt className="text-xs font-bold uppercase text-slate-400">Tickets</dt><dd>{selectedBooking.ticketCount}</dd></div>
-              <div><dt className="text-xs font-bold uppercase text-slate-400">Total</dt><dd>${selectedBooking.totalAmount.toFixed(2)}</dd></div>
+              <div><dt className="text-xs font-bold uppercase text-slate-400">Total</dt><dd>{formatCurrency(selectedBooking.totalAmount)}</dd></div>
               <div><dt className="text-xs font-bold uppercase text-slate-400">Booking date</dt><dd>{selectedBooking.bookingDate}</dd></div>
             </dl>
           </section>
