@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const Profile: React.FC = () => {
-  const { currentUser, bookings, savedEventIds, events, showToast } = useApp();
+  const { currentUser, confirmedBookingsCount, savedEventIds, events, showToast } = useApp();
 
   const [name, setName] = useState(currentUser?.name || 'Aarav Sharma');
   const [email, setEmail] = useState(currentUser?.email || 'aarav.sharma@example.com');
@@ -24,7 +24,6 @@ export const Profile: React.FC = () => {
   const [notifySms, setNotifySms] = useState(true);
 
   const savedEventsList = events.filter(e => savedEventIds.includes(e.id));
-  const activeBookingsCount = bookings.filter(b => b.status === 'CONFIRMED').length;
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +57,7 @@ export const Profile: React.FC = () => {
         {/* Quick Numbers */}
         <div className="flex gap-6 border-t sm:border-t-0 sm:border-l border-slate-100 pt-4 sm:pt-0 sm:pl-8 text-center relative z-10">
           <div className="space-y-1">
-            <p className="text-3xl font-black text-indigo-600">{activeBookingsCount}</p>
+            <p className="text-3xl font-black text-indigo-600">{confirmedBookingsCount}</p>
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Passes</p>
           </div>
           <div className="space-y-1">

@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { currentUser, bookings, savedEventIds, logout, showToast } = useApp();
+  const { currentUser, confirmedBookingsCount, savedEventIds, logout, showToast } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [navSearch, setNavSearch] = useState('');
@@ -39,7 +39,6 @@ export const Navbar: React.FC = () => {
     }
   };
 
-  const confirmedBookingsCount = bookings.filter(b => b.status === 'CONFIRMED').length;
   const bookingsLabel = currentUser?.role === 'ADMIN' ? 'All Bookings' : 'My Bookings';
   const bookingsPath = currentUser?.role === 'ADMIN' ? '/admin/bookings' : '/my-bookings';
 

@@ -2,13 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 import { adminService, getApiErrorMessage } from '../../services/api';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { Pagination } from '../../components/Pagination';
 import type { BookingRecord } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { formatCurrency } from '../../utils/format';
 
+const PAGE_SIZE = 5;
+
 export const AdminBookings: React.FC = () => {
   const { refreshBookings, refreshEvents } = useApp();
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [totalBookings, setTotalBookings] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -19,9 +24,12 @@ export const AdminBookings: React.FC = () => {
 
   useEffect(() => {
     let active = true;
-    adminService.getAllBookings()
-      .then(records => {
-        if (active) setBookings(records);
+    adminService.getBookingsPage(currentPage - 1, PAGE_SIZE)
+      .then(result => {
+        if (active) {
+          setBookings(result.content);
+          setTotalBookings(result.totalElements);
+        }
       })
       .catch(error => {
         if (active) setErrorMessage(getApiErrorMessage(error, 'Unable to load bookings.'));
@@ -33,7 +41,7 @@ export const AdminBookings: React.FC = () => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [currentPage]);
 
   const updateStatus = async (bookingId: number, status: BookingRecord['status']): Promise<boolean> => {
     setErrorMessage('');
@@ -58,7 +66,14 @@ export const AdminBookings: React.FC = () => {
     setUpdatingId(booking.id);
     try {
       await adminService.deleteBooking(booking.id);
-      setBookings(current => current.filter(item => item.id !== booking.id));
+      const newTotal = totalBookings - 1;
+      setTotalBookings(newTotal);
+      if (bookings.length === 1 && currentPage > 1) {
+        setIsLoading(true);
+        setCurrentPage(page => page - 1);
+      } else {
+        setBookings(current => current.filter(item => item.id !== booking.id));
+      }
       await Promise.all([refreshBookings(), refreshEvents()]);
       setPendingDelete(null);
     } catch (error) {
@@ -160,6 +175,15 @@ export const AdminBookings: React.FC = () => {
               ))}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalBookings}
+            pageSize={PAGE_SIZE}
+            onPageChange={page => {
+              setIsLoading(true);
+              setCurrentPage(page);
+            }}
+          />
         </div>
       )}
       {selectedBooking && (

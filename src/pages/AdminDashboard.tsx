@@ -3,8 +3,10 @@ import { Building, Calendar, Eye, Layers, Pencil, Plus, Shield, Trash2, Users } 
 import { Link } from 'react-router-dom';
 import { adminService, getApiErrorMessage } from '../services/api';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { Pagination } from '../components/Pagination';
 import type {
   AdminEventRecord,
+  AdminBookingSummary,
   CategoryManagementRequest,
   EventManagementRequest,
   VenueManagementRequest,
@@ -14,6 +16,7 @@ import { useApp } from '../context/AppContext';
 import { formatCurrency, formatIndianDateTime } from '../utils/format';
 
 type AdminTab = 'events' | 'categories' | 'venues' | 'bookings';
+const PAGE_SIZE = 5;
 type FormKind = 'event' | 'category' | 'venue';
 type ViewRecord =
   | { kind: 'event'; value: AdminEventRecord }
@@ -80,10 +83,24 @@ const ActionButton: React.FC<{
 export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab = 'events' }) => {
   const { refreshEvents, refreshBookings, showToast } = useApp();
   const [activeTab, setActiveTab] = useState<AdminTab>(initialTab);
+  const [currentPage, setCurrentPage] = useState(1);
   const [events, setEvents] = useState<AdminEventRecord[]>([]);
   const [categories, setCategories] = useState<EventCategory[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<EventCategory[]>([]);
+  const [venueOptions, setVenueOptions] = useState<Venue[]>([]);
+  const [recordCounts, setRecordCounts] = useState<Record<AdminTab, number>>({
+    events: 0,
+    categories: 0,
+    venues: 0,
+    bookings: 0,
+  });
+  const [bookingSummary, setBookingSummary] = useState<AdminBookingSummary>({
+    confirmedBookings: 0,
+    confirmedTickets: 0,
+    confirmedRevenue: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [formKind, setFormKind] = useState<FormKind | null>(null);
@@ -119,17 +136,29 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
   useEffect(() => {
     let active = true;
     Promise.all([
-      adminService.getAllEvents(),
+      adminService.getEventsPage(0, PAGE_SIZE),
+      adminService.getCategoriesPage(0, PAGE_SIZE),
+      adminService.getVenuesPage(0, PAGE_SIZE),
+      adminService.getBookingsPage(0, PAGE_SIZE),
       adminService.getAllCategories(),
       adminService.getAllVenues(),
-      adminService.getAllBookings(),
+      adminService.getBookingSummary(),
     ])
-      .then(([eventRecords, categoryRecords, venueRecords, bookingRecords]) => {
+      .then(([eventPage, categoryPage, venuePage, bookingPage, categoriesForForm, venuesForForm, summary]) => {
         if (!active) return;
-        setEvents(eventRecords);
-        setCategories(categoryRecords);
-        setVenues(venueRecords);
-        setBookings(bookingRecords);
+        setEvents(eventPage.content);
+        setCategories(categoryPage.content);
+        setVenues(venuePage.content);
+        setBookings(bookingPage.content);
+        setCategoryOptions(categoriesForForm);
+        setVenueOptions(venuesForForm);
+        setRecordCounts({
+          events: eventPage.totalElements,
+          categories: categoryPage.totalElements,
+          venues: venuePage.totalElements,
+          bookings: bookingPage.totalElements,
+        });
+        setBookingSummary(summary);
       })
       .catch(error => {
         if (active) setErrorMessage(getApiErrorMessage(error, 'Unable to load admin records.'));
@@ -143,6 +172,40 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
     };
   }, []);
 
+  const loadTabPage = async (tab: AdminTab, page: number) => {
+    setIsLoading(true);
+    setErrorMessage('');
+    try {
+      if (tab === 'events') {
+        const result = await adminService.getEventsPage(page, PAGE_SIZE);
+        setEvents(result.content);
+        setRecordCounts(current => ({ ...current, events: result.totalElements }));
+      } else if (tab === 'categories') {
+        const result = await adminService.getCategoriesPage(page, PAGE_SIZE);
+        setCategories(result.content);
+        setRecordCounts(current => ({ ...current, categories: result.totalElements }));
+      } else if (tab === 'venues') {
+        const result = await adminService.getVenuesPage(page, PAGE_SIZE);
+        setVenues(result.content);
+        setRecordCounts(current => ({ ...current, venues: result.totalElements }));
+      } else {
+        const [result, summary] = await Promise.all([
+          adminService.getBookingsPage(page, PAGE_SIZE),
+          adminService.getBookingSummary(),
+        ]);
+        setBookings(result.content);
+        setBookingSummary(summary);
+        setRecordCounts(current => ({ ...current, bookings: result.totalElements }));
+      }
+      setActiveTab(tab);
+      setCurrentPage(page + 1);
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, `Unable to load ${tab}.`));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const openCreateForm = (kind: FormKind) => {
     setEditingId(null);
     setErrorMessage('');
@@ -151,8 +214,8 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
       setEventForm({
         title: '',
         description: '',
-        categoryId: categories[0] ? String(categories[0].id) : '',
-        venueId: venues[0] ? String(venues[0].id) : '',
+        categoryId: categoryOptions[0] ? String(categoryOptions[0].id) : '',
+        venueId: venueOptions[0] ? String(venueOptions[0].id) : '',
         dateTime: nextEventDate(),
         price: '',
         totalSeats: '',
@@ -222,18 +285,23 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
         const saved = editingId === null
           ? await adminService.createEvent(request)
           : await adminService.updateEvent(editingId, request);
-        setEvents(current => editingId === null
-          ? [saved, ...current]
-          : current.map(item => item.id === saved.id ? saved : item));
+        if (editingId === null) {
+          await loadTabPage('events', 0);
+        } else {
+          setEvents(current => current.map(item => item.id === saved.id ? saved : item));
+        }
         await refreshEvents();
       } else if (formKind === 'category') {
         const request: CategoryManagementRequest = categoryForm;
         const saved = editingId === null
           ? await adminService.createCategory(request)
           : await adminService.updateCategory(editingId, request);
-        setCategories(current => editingId === null
-          ? [...current, saved]
-          : current.map(item => item.id === saved.id ? saved : item));
+        setCategoryOptions(await adminService.getAllCategories());
+        if (editingId === null) {
+          await loadTabPage('categories', 0);
+        } else {
+          setCategories(current => current.map(item => item.id === saved.id ? saved : item));
+        }
         await refreshEvents();
       } else {
         const request: VenueManagementRequest = {
@@ -243,9 +311,12 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
         const saved = editingId === null
           ? await adminService.createVenue(request)
           : await adminService.updateVenue(editingId, request);
-        setVenues(current => editingId === null
-          ? [...current, saved]
-          : current.map(item => item.id === saved.id ? saved : item));
+        setVenueOptions(await adminService.getAllVenues());
+        if (editingId === null) {
+          await loadTabPage('venues', 0);
+        } else {
+          setVenues(current => current.map(item => item.id === saved.id ? saved : item));
+        }
         await refreshEvents();
       }
 
@@ -266,21 +337,30 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
     try {
       if (kind === 'event') {
         await adminService.deleteEvent(record.id);
-        setEvents(current => current.filter(item => item.id !== record.id));
         await refreshEvents();
       } else if (kind === 'category') {
         await adminService.deleteCategory(record.id);
-        setCategories(current => current.filter(item => item.id !== record.id));
+        setCategoryOptions(await adminService.getAllCategories());
         await refreshEvents();
       } else if (kind === 'venue') {
         await adminService.deleteVenue(record.id);
-        setVenues(current => current.filter(item => item.id !== record.id));
+        setVenueOptions(await adminService.getAllVenues());
         await refreshEvents();
       } else {
         await adminService.deleteBooking(record.id);
-        setBookings(current => current.filter(item => item.id !== record.id));
         await Promise.all([refreshBookings(), refreshEvents()]);
       }
+      const tab: AdminTab = kind === 'event'
+        ? 'events'
+        : kind === 'category'
+          ? 'categories'
+          : kind === 'venue'
+            ? 'venues'
+            : 'bookings';
+      const newCount = Math.max(0, recordCounts[tab] - 1);
+      setRecordCounts(current => ({ ...current, [tab]: newCount }));
+      const lastPage = Math.max(0, Math.ceil(newCount / PAGE_SIZE) - 1);
+      await loadTabPage(tab, Math.min(currentPage - 1, lastPage));
       showToast(`${kind[0].toUpperCase()}${kind.slice(1)} deleted successfully.`, 'success');
       setPendingDelete(null);
     } catch (error) {
@@ -310,7 +390,12 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
     try {
       const saved = await adminService.updateBookingStatus(booking.id, status);
       setBookings(current => current.map(item => item.id === saved.id ? saved : item));
-      await Promise.all([refreshBookings(), refreshEvents()]);
+      const [summary] = await Promise.all([
+        adminService.getBookingSummary(),
+        refreshBookings(),
+        refreshEvents(),
+      ]);
+      setBookingSummary(summary);
       showToast(`Booking EH-${booking.id} updated.`, 'success');
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, 'Unable to update booking.'));
@@ -318,15 +403,18 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
   };
 
   const tabs: { id: AdminTab; label: string; count: number }[] = [
-    { id: 'events', label: 'Events', count: events.length },
-    { id: 'categories', label: 'Categories', count: categories.length },
-    { id: 'venues', label: 'Venues', count: venues.length },
-    { id: 'bookings', label: 'Bookings', count: bookings.length },
+    { id: 'events', label: 'Events', count: recordCounts.events },
+    { id: 'categories', label: 'Categories', count: recordCounts.categories },
+    { id: 'venues', label: 'Venues', count: recordCounts.venues },
+    { id: 'bookings', label: 'Bookings', count: recordCounts.bookings },
   ];
 
-  const confirmedBookings = bookings.filter(booking => booking.status === 'CONFIRMED');
-  const totalRevenue = confirmedBookings.reduce((sum, booking) => sum + booking.totalAmount, 0);
-  const totalTickets = confirmedBookings.reduce((sum, booking) => sum + booking.ticketCount, 0);
+  const activeTabCount = tabs.find(tab => tab.id === activeTab)?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(activeTabCount / PAGE_SIZE));
+  const displayedPage = Math.min(currentPage, totalPages);
+
+  const totalRevenue = bookingSummary.confirmedRevenue;
+  const totalTickets = bookingSummary.confirmedTickets;
   const singular = activeTab === 'events' ? 'event' : activeTab === 'bookings' ? 'booking' : activeTab.slice(0, -1);
   const activeFormKind: FormKind | null = activeTab === 'events'
     ? 'event'
@@ -358,8 +446,8 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Management summary">
-        <SummaryCard icon={<Calendar className="h-5 w-5" />} label="Events" value={String(events.length)} />
-        <SummaryCard icon={<Layers className="h-5 w-5" />} label="Categories" value={String(categories.length)} />
+        <SummaryCard icon={<Calendar className="h-5 w-5" />} label="Events" value={String(recordCounts.events)} />
+        <SummaryCard icon={<Layers className="h-5 w-5" />} label="Categories" value={String(recordCounts.categories)} />
         <SummaryCard icon={<Users className="h-5 w-5" />} label="Confirmed Tickets" value={String(totalTickets)} />
         <SummaryCard icon={<Building className="h-5 w-5" />} label="Confirmed Revenue" value={formatCurrency(totalRevenue)} />
       </section>
@@ -369,7 +457,7 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => void loadTabPage(tab.id, 0)}
             aria-current={activeTab === tab.id ? 'page' : undefined}
             className={`whitespace-nowrap border-b-2 px-4 py-3 text-sm font-bold transition ${
               activeTab === tab.id
@@ -488,6 +576,14 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
             || (activeTab === 'bookings' && bookings.length === 0)) && (
             <p className="p-10 text-center text-sm text-slate-500">No {activeTab} found.</p>
           )}
+          {!isLoading && activeTabCount > 0 && (
+            <Pagination
+              currentPage={displayedPage}
+              totalItems={activeTabCount}
+              pageSize={PAGE_SIZE}
+              onPageChange={page => void loadTabPage(activeTab, page - 1)}
+            />
+          )}
         </section>
       )}
 
@@ -500,10 +596,10 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
                 <TextField label="Description" value={eventForm.description} onChange={value => setEventForm(current => ({ ...current, description: value }))} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <SelectField label="Category" required value={eventForm.categoryId} onChange={value => setEventForm(current => ({ ...current, categoryId: value }))}>
-                    {categories.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    {categoryOptions.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
                   </SelectField>
                   <SelectField label="Venue" required value={eventForm.venueId} onChange={value => setEventForm(current => ({ ...current, venueId: value }))}>
-                    {venues.map(item => <option key={item.id} value={item.id}>{item.name}, {item.city}</option>)}
+                    {venueOptions.map(item => <option key={item.id} value={item.id}>{item.name}, {item.city}</option>)}
                   </SelectField>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -516,7 +612,7 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
                 </div>
                 <TextField label="Image URL" type="url" value={eventForm.imageUrl} onChange={value => setEventForm(current => ({ ...current, imageUrl: value }))} />
                 <label className="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" checked={eventForm.featured} onChange={event => setEventForm(current => ({ ...current, featured: event.target.checked }))} /> Featured event</label>
-                {(categories.length === 0 || venues.length === 0) && <p className="text-sm text-amber-700">Add at least one category and venue before saving events.</p>}
+                {(categoryOptions.length === 0 || venueOptions.length === 0) && <p className="text-sm text-amber-700">Add at least one category and venue before saving events.</p>}
               </>
             )}
             {formKind === 'category' && <>
@@ -532,12 +628,12 @@ export const AdminDashboard: React.FC<{ initialTab?: AdminTab }> = ({ initialTab
               <TextField label="City (India)" required value={venueForm.city} onChange={value => setVenueForm(current => ({ ...current, city: value }))} />
               <TextField label="Capacity" type="number" min="1" required value={venueForm.capacity} onChange={value => setVenueForm(current => ({ ...current, capacity: value }))} />
             </>}
-            {(formKind === 'event' && (categories.length === 0 || venues.length === 0)) && <p className="text-sm text-amber-700">Create a category and venue first to add an event.</p>}
+            {(formKind === 'event' && (categoryOptions.length === 0 || venueOptions.length === 0)) && <p className="text-sm text-amber-700">Create a category and venue first to add an event.</p>}
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={() => setFormKind(null)} className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>
               <button
                 type="submit"
-                disabled={isSaving || (formKind === 'event' && (!categories.length || !venues.length))}
+                disabled={isSaving || (formKind === 'event' && (!categoryOptions.length || !venueOptions.length))}
                 className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : 'Save'}

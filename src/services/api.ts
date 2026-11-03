@@ -72,6 +72,20 @@ export interface VenueManagementRequest {
   capacity: number;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface AdminBookingSummary {
+  confirmedBookings: number;
+  confirmedTickets: number;
+  confirmedRevenue: number;
+}
+
 export const getApiErrorMessage = (error: unknown, fallback: string): string => {
   if (!axios.isAxiosError(error)) {
     return fallback;
@@ -196,22 +210,28 @@ export const bookingService = {
 
 // Administrative & User Profile Services
 export const adminService = {
-  getAllEvents: async (): Promise<AdminEventRecord[]> => (await api.get<AdminEventRecord[]>('/admin/events')).data,
+  getEventsPage: async (page: number, size: number): Promise<PageResponse<AdminEventRecord>> =>
+    (await api.get<PageResponse<AdminEventRecord>>('/admin/events', { params: { page, size } })).data,
+  getAllEvents: async (): Promise<AdminEventRecord[]> => (await api.get<AdminEventRecord[]>('/admin/events/all')).data,
   createEvent: async (event: EventManagementRequest): Promise<AdminEventRecord> =>
     (await api.post<AdminEventRecord>('/admin/events', event)).data,
   updateEvent: async (id: number, event: EventManagementRequest): Promise<AdminEventRecord> =>
     (await api.put<AdminEventRecord>(`/admin/events/${id}`, event)).data,
   deleteEvent: async (id: number): Promise<void> => { await api.delete(`/admin/events/${id}`); },
 
+  getCategoriesPage: async (page: number, size: number): Promise<PageResponse<EventCategory>> =>
+    (await api.get<PageResponse<EventCategory>>('/admin/categories', { params: { page, size } })).data,
   getAllCategories: async (): Promise<EventCategory[]> =>
-    (await api.get<EventCategory[]>('/admin/categories')).data,
+    (await api.get<EventCategory[]>('/admin/categories/all')).data,
   createCategory: async (category: CategoryManagementRequest): Promise<EventCategory> =>
     (await api.post<EventCategory>('/admin/categories', category)).data,
   updateCategory: async (id: number, category: CategoryManagementRequest): Promise<EventCategory> =>
     (await api.put<EventCategory>(`/admin/categories/${id}`, category)).data,
   deleteCategory: async (id: number): Promise<void> => { await api.delete(`/admin/categories/${id}`); },
 
-  getAllVenues: async (): Promise<Venue[]> => (await api.get<Venue[]>('/admin/venues')).data,
+  getVenuesPage: async (page: number, size: number): Promise<PageResponse<Venue>> =>
+    (await api.get<PageResponse<Venue>>('/admin/venues', { params: { page, size } })).data,
+  getAllVenues: async (): Promise<Venue[]> => (await api.get<Venue[]>('/admin/venues/all')).data,
   createVenue: async (venue: VenueManagementRequest): Promise<Venue> =>
     (await api.post<Venue>('/admin/venues', venue)).data,
   updateVenue: async (id: number, venue: VenueManagementRequest): Promise<Venue> =>
@@ -219,7 +239,11 @@ export const adminService = {
   deleteVenue: async (id: number): Promise<void> => { await api.delete(`/admin/venues/${id}`); },
 
   // Booking Operations
-  getAllBookings: async (): Promise<BookingRecord[]> => (await api.get<BookingRecord[]>('/admin/bookings')).data,
+  getBookingsPage: async (page: number, size: number): Promise<PageResponse<BookingRecord>> =>
+    (await api.get<PageResponse<BookingRecord>>('/admin/bookings', { params: { page, size } })).data,
+  getAllBookings: async (): Promise<BookingRecord[]> => (await api.get<BookingRecord[]>('/admin/bookings/all')).data,
+  getBookingSummary: async (): Promise<AdminBookingSummary> =>
+    (await api.get<AdminBookingSummary>('/admin/bookings/summary')).data,
   updateBookingStatus: async (id: number, status: string) =>
     (await api.patch<BookingRecord>(`/admin/bookings/${id}/status`, null, { params: { status } })).data,
   deleteBooking: async (id: number): Promise<void> => { await api.delete(`/admin/bookings/${id}`); },

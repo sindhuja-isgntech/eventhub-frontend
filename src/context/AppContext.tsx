@@ -6,6 +6,7 @@ interface AppContextType {
   events: Event[];
   categories: EventCategory[];
   bookings: Booking[];
+  confirmedBookingsCount: number;
   bookingsLoading: boolean;
   currentUser: User | null;
   authLoading: boolean;
@@ -265,6 +266,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [categories, setCategories] = useState<EventCategory[]>(INITIAL_CATEGORIES);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [confirmedBookingsCount, setConfirmedBookingsCount] = useState(0);
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -353,10 +355,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setBookingsLoading(true);
     try {
-      const records = currentUser.role === 'ADMIN'
-        ? await adminService.getAllBookings()
-        : await bookingService.getMyBookings();
-      setBookings(records.map(mapBookingRecord));
+      if (currentUser.role === 'ADMIN') {
+        const summary = await adminService.getBookingSummary();
+        setBookings([]);
+        setConfirmedBookingsCount(summary.confirmedBookings);
+      } else {
+        const records = await bookingService.getMyBookings();
+        const mappedBookings = records.map(mapBookingRecord);
+        setBookings(mappedBookings);
+        setConfirmedBookingsCount(mappedBookings.filter(booking => booking.status === 'CONFIRMED').length);
+      }
     } finally {
       setBookingsLoading(false);
     }
@@ -374,6 +382,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const login = async (email: string, password: string) => {
     const user = await authService.login({ email, password });
     setBookings([]);
+    setConfirmedBookingsCount(0);
     setSavedEventIds(readSavedEventIds(user));
     setCurrentUser(user);
     showToast(`Welcome back, ${user.name}!`, 'success');
@@ -385,6 +394,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
     setSavedEventIds([]);
     setBookings([]);
+    setConfirmedBookingsCount(0);
     setBookingsLoading(false);
     showToast('You have signed out successfully.', 'info');
   };
@@ -398,6 +408,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       role,
     });
     setBookings([]);
+    setConfirmedBookingsCount(0);
     setSavedEventIds(readSavedEventIds(newUser));
     setCurrentUser(newUser);
     showToast(`Account created! Welcome to EventHub, ${name}.`, 'success');
@@ -480,6 +491,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         events,
         categories,
         bookings,
+        confirmedBookingsCount,
         bookingsLoading,
         currentUser,
         authLoading,
