@@ -15,7 +15,6 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminBookings } from './pages/admin/AdminBookings';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Home as HomeIcon, AlertCircle } from 'lucide-react';
-import './App.css';
 
 // 404 Fallback Component
 const NotFound: React.FC = () => (

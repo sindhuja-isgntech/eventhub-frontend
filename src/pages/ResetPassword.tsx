@@ -33,15 +33,23 @@ export const ResetPassword: React.FC = () => {
   };
 
   return (
-    <main className="relative min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 via-indigo-50/20 to-slate-100 px-4 py-12 sm:px-6 overflow-hidden">
-      {/* Decorative ambient background glows */}
+    <main className="relative isolate min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-950 px-4 py-12 sm:px-6 overflow-hidden">
+      {/* Decorative background: glows + dot grid */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-20 -top-20 -z-10 h-72 w-72 rounded-full bg-indigo-200/40 blur-3xl"
+        className="pointer-events-none absolute -left-24 -top-24 -z-10 h-96 w-96 rounded-full bg-indigo-500/30 blur-3xl animate-pulse-glow"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-20 -bottom-20 -z-10 h-80 w-80 rounded-full bg-violet-200/35 blur-3xl"
+        className="pointer-events-none absolute -right-24 top-1/3 -z-10 h-96 w-96 rounded-full bg-fuchsia-500/20 blur-3xl animate-pulse-glow"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-32 left-1/4 -z-10 h-80 w-80 rounded-full bg-violet-500/25 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.15] [background-image:radial-gradient(#a5b4fc_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
       />
 
       <div

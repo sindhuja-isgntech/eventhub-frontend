@@ -6,7 +6,7 @@ import { ToastContainer } from '../components/Toast';
 
 export const CustomerLayout: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-transparent text-slate-900 font-sans selection:bg-indigo-500 selection:text-white">
       {/* Sticky Enhanced Navigation */}
       <Navbar />
 
